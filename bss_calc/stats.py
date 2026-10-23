@@ -26,6 +26,14 @@ STAT_DEFS = {
     "bee_ability_pollen": ("Bee Ability Pollen", "pct"),
     "honey_from_tokens": ("Honey From Tokens", "pct"),
     "mark_duration": ("Mark Duration", "pct"),
+    "white_bee_convert_rate": ("Colorless Bee Convert Rate", "pct"),
+    "red_bee_convert_rate": ("Red Bee Convert Rate", "pct"),
+    "blue_bee_convert_rate": ("Blue Bee Convert Rate", "pct"),
+    "bee_attack": ("Bee Attack", "flat"),
+    "white_bee_attack": ("Colorless Bee Attack", "flat"),
+    "red_bee_attack": ("Red Bee Attack", "flat"),
+    "blue_bee_attack": ("Blue Bee Attack", "flat"),
+    "attack_mult": ("Attack Multiplier", "pct"),
     "gifted_bee_pollen": ("Gifted Bee Pollen", "pct"),
     "capacity_flat": ("Capacity (flat)", "flat"),
     "capacity": ("Capacity Multiplier", "pct"),
@@ -41,6 +49,7 @@ STAT_DEFS = {
     "instant_white_conversion": ("Instant White Conversion", "pct0"),
     "instant_red_conversion": ("Instant Red Conversion", "pct0"),
     "instant_blue_conversion": ("Instant Blue Conversion", "pct0"),
+    "unique_instant_conversion": ("Unique Instant Conversion", "pct0"),
     "crit_chance": ("Critical Chance", "pct0"),
     "crit_power": ("Critical Power", "pct0"),
     "super_crit_chance": ("Super-Crit Chance", "pct0"),
@@ -70,6 +79,7 @@ STAT_DEFS = {
     "bee:ability_rate": ("Bee: Ability Rate", "pct"),
     "bee:ability_pollen": ("Bee: Ability Pollen", "pct"),
     "bee:bomb_pollen": ("Bee: Bomb Pollen", "pct"),
+    "bee:attack": ("Bee: Attack", "flat"),
 }
 for _field in GAME["fields"]:
     STAT_DEFS[f"field_pollen:{_field}"] = (f"{_field} Pollen", "pct")
@@ -122,6 +132,7 @@ _BEEQUIP_BEE_STATS = {
     "BubbleChance": ("bee:bubble_chance", "add"), "BubblePollen": ("bee:bubble_pollen", "mul"),
     "AbilityRate": ("bee:ability_rate", "mul"), "AbilityPollen": ("bee:ability_pollen", "mul"),
     "BombPollen": ("bee:bomb_pollen", "mul"), "BuzzBombPollen": ("bee:bomb_pollen", "mul"),
+    "AttackAdd": ("bee:attack", "add"), "AttackMul": ("bee:attack", "mul"),
     "RedBombPollen": ("bee:bomb_pollen", "mul"), "BlueBombPollen": ("bee:bomb_pollen", "mul"),
 }
 _HIVE_TYPES = {
@@ -154,6 +165,10 @@ def hive_key(type_, params):
         if "Color" in params:
             return f"instant_{params['Color'].lower()}_conversion"
         return None if params else "instant_conversion"
+    if type_ == "BeeAttack":
+        return f"{params['Color'].lower()}_bee_attack" if "Color" in params else "bee_attack"
+    if type_ == "BeeAttackMultiplier":
+        return "attack_mult" if not params else None
     if type_ in ("ContainerSpace", "ContainerSpaceMultiplier") and "Color" in params:
         return f"{params['Color'].lower()}_field_capacity"
     if params:  # zone- or tag-limited versions of generic stats aren't modelled

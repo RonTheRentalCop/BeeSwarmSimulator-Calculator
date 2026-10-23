@@ -231,7 +231,7 @@ def token_yield(tokens, ctx):
             marks_up = ctx["active_marks"]
             add(tok, flowers(7 * lvl / 10, 64 * marks_up, extra=bee_mult), t["rate"])
         elif tok == "Target Practice":
-            attack = GAME["bees"]["Precise"]["attack"] * (1.5 if t["gifted"] else 1)
+            attack = row.get("attack") or GAME["bees"]["Precise"]["attack"] * (1.5 if t["gifted"] else 1)
             add(tok, flowers(2 * attack * lvl / 10, 29 * s["targets_hit"], extra=bee_mult), t["rate"])
         elif tok == "Inferno":
             # 2 temporary Fire Bees, 2 levels lower, for 15 s + 1 s per level

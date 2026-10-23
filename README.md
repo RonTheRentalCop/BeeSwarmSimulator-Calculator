@@ -22,13 +22,16 @@ The first launch downloads Flet's desktop client, which takes a moment.
   - **Hive:** a visual 5×10 hive (slot 1 is bottom-left, like the game). Pick a bee from the palette of all 46 bee faces (filterable by rarity), then click any empty slot to place it there; gaps are allowed. Click a placed bee to edit its level, gifted status, beequip and exact stats, or to move it (arrows, "Go to slot", or move mode: click any slot and it moves or swaps), copy it or remove it.
   - **Gear:** pick your tool, bag, mask, guards, belt and boots.
   - **Amulets:** choose each amulet and enter the stats it rolled.
-  - **Buffs:** add badges, stickers, boosts and so on.
-  - **Field & Settings:** pick your field and adjust the model settings.
+  - **Badges:** pick your tier in each badge category.
+  - **Buffs & Items:** add item buffs (Super Smoothie, Purple Potion, Field Boost…) with their exact wiki values, plus anything else you keep running.
+  - **Alts:** add alt accounts macroing in your field, such as a Fuzzy alt, a Tad alt or both.
+  - **Field & Settings:** pick your field and set nectars, Balloon Blessing, Polar Power, Honeyday, your gather time and the other model settings.
+  - **System Page:** type in totals from your in-game System Page to replace the calculated ones. This covers the sticker stack, Robo upgrades and anything else the app can't see.
 - **Results**
   - Shows honey/hr, honey/day, pollen/s from bees and from your tool, capacity, bag fill and convert times, and instant conversion.
   - Shows your stat totals, so you can check them against your in-game System Page, and a per-bee breakdown.
   - **"Where your next gains come from"** ranks how much honey/hr each stat bump would add.
-- **Alts:** add alt accounts macroing in your field, such as a Fuzzy alt, a Tad alt or both. Results shows what each one adds to your main, what it makes for itself, and the total across all accounts.
+- **Guide:** a blue hive guide (based on Anthrax's guide) covering comps, progression, beequips, amulets, mutations and gifting, with bee faces and item pictures. You can load a guide comp as a new setup.
 - **Compare:** duplicate a setup (copy icon at the top), change something, and see the honey/hr difference stat by stat.
 
 Setups save automatically: in your browser on the website, and in the app's own storage on desktop.
@@ -50,7 +53,7 @@ Bee faces, bee renders (normal and gifted), beequips, tools, gear and amulets ar
 The **How it works** page in the app explains the full model. In short:
 
 - **Bees**
-  - Gather is `base × flower tier × (1 + 10%/level) × 1.5 if gifted`, where single = ×1 up to star = ×5. A crit doubles a gather.
+  - Gather is `base × flower tier × (1 + 5%/level) × 1.5 if gifted`; convert is +10% per level, where single = ×1 up to star = ×5. A crit doubles a gather.
   - Red and blue bees get +50% on flowers of their own colour.
   - Energy and movespeed scale with level; tired bees fly home and sleep.
 - **Pollination**
@@ -59,10 +62,15 @@ The **How it works** page in the app explains the full model. In short:
   - Sources: Fuzzy Coat, Lei/Poinsettia/Rose Headband, Pollen Haze, Guiding Star and Diamond Drain.
 - **Bubbles:** 4 red / 6 white / 8 blue pollen from 29 flowers (+15% per gifted blue type, +5% per level). You only get pollen from your own bubbles and from frog bubbles.
 - **Alts:** flowers are shared, so an alt's Fuzzy Coat and Pollen Haze raise your flower tiers. Pollen Haze can only happen once per 3 minutes per field. An alt's frogs pay you too, but its own Gathering Bubbles and tokens only help the alt. Token rates come from the wiki's spawn data.
+- **Ability tokens:** every bee spawns its abilities at the wiki's spawn rates (adjusted by Bee Ability Rate). Bombs, Beamstorm, Scratch, Triangulate, Target Practice and the rest collect their wiki amounts. Boost, Inspire, Focus, Melody, Baby Love, Bear Morph, Pollen Mark and Bomb Combo buffs stack using their wiki values.
+- **Balloons:** Buoyant balloons catch pollen under their shadow and are converted at the hive, where Buoyant Bees convert them ×3. Balloon Blessing multiplies Capacity and Honey at Hive.
+- **Honey at Hive:** Shimmering Honey from Diamond Bees, Honey at Hive stats and Honey Per Pollen multiply every hive conversion.
+- **Passives:** Diamond Drain, Star Shower, Coin Scatter and Petal Storm convert bag pollen while you're in the field. Pop Star gives Blue Pollen and Bubble Bloat. Star Amulet passives add their capacity bonuses.
+- **Attack:** each bee's attack is calculated and shown.
 - **Stats:** each stat is `(100% + every "+%") × every "x"`. Gifted hive bonuses count once per bee type.
 - **Honey loop:** you gather until the bag is full (less any instant conversion), walk to the hive, and your bees convert the bag.
 
-**Not simulated:** most ability tokens (apart from Pollen Haze, Fuzz Bombs and Summon Frog), other passives, bombs, flames, marks, mobs, planters, and alts taking pollen from the same flowers. Add them as buffs, or use the *Ability token pollen* setting.
+**Not simulated:** Pulse, Tornado, Rain Cloud, Glob and goo, flames, Coconut Combo, Tide Popper waves, mobs, planters, and alts taking pollen from the same flowers. Use the Buffs & Items tab or System Page overrides for these. Add them as buffs, or use the *Ability token pollen* setting.
 
 **Assumptions you can change:**
 - Base crit chance 5%.

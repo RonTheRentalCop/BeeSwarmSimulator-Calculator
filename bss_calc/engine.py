@@ -1,7 +1,7 @@
 """Honey-per-hour model for a Bee Swarm Simulator setup.
 
 The model follows the wiki's documented formulas:
-  * bee gather   = base gather x flower tier (single 1 .. star 5) x (1 + 0.10 x (lvl-1)) x 1.5 if gifted,
+  * bee gather   = base gather x flower tier (single 1 .. star 5) x (1 + 0.05 x (lvl-1)) x 1.5 if gifted,
                    +50% on flowers of the bee's colour; a crit doubles it (bee pages' pollen tables)
   * bee convert  = (base convert + Convert Amount) x (1 + 0.10 x (lvl-1)) x Convert Rate x 1.5 if gifted
   * bee energy   = base energy x (1 + 0.05 x (lvl-1));  speed = base speed x (1 + 0.03 x (lvl-1))
@@ -26,7 +26,7 @@ import functools
 import math
 import random
 
-from . import abilities
+from . import abilities, passives
 from .data import GAME
 from .stats import COLORS, kind
 
@@ -50,6 +50,16 @@ DEFAULT_SETTINGS = {
     "triangle_flowers": 30.0,      # flowers inside an average Vector Triangulate triangle
     "targets_hit": 2.0,            # Precise Bee Target Practice targets you activate (0-3)
     "tabby_love_stacks": 0.0,      # your Tabby Love stacks (0-1000)
+    "balloon_blessing": 0.0,       # Balloon Blessing stacks (0-100): x1.03 Capacity, x1.015 Honey at Hive each
+    "polar_power": 0.0,            # Polar Power stacks: +5% bee energy each
+    "honeyday": False,             # Honeyday Event buff: x2 Pollen and Convert Rate
+    "star_catch_pct": 70.0,        # Star Shower shooting stars you catch
+    "max_gather_minutes": 14.0,    # convert at least this often, even if the bag isn't full (macro gather time)
+    "nectar_comforting": 0.0,      # nectar strength 0-100% (scales with time left, up to 24 h)
+    "nectar_motivating": 0.0,
+    "nectar_satisfying": 0.0,
+    "nectar_refreshing": 0.0,
+    "nectar_invigorating": 0.0,
     "guiding_star_uptime_pct": 0.0,  # % of time Guiding Star (Star Amulet passive) is active
     "diamond_drain_per_min": 0.0,  # Diamond Drain activations per minute (Diamond Mask)
 }
@@ -112,6 +122,8 @@ def new_setup(name="My Setup"):
         "amulets": {},
         "buffs": [],
         "alts": [],
+        "badges": {},
+        "overrides": {},
         "settings": dict(DEFAULT_SETTINGS),
     }
 
@@ -123,8 +135,9 @@ def new_bee(bee_type="Basic", level=1, gifted=False):
 class StatBag:
     """Collects (+) and (x) contributions per stat and resolves them like the game does."""
 
-    def __init__(self, bases=None):
+    def __init__(self, bases=None, overrides=None):
         self.adds, self.muls, self.bases = {}, {}, dict(bases or {})
+        self.overrides = {k: v for k, v in (overrides or {}).items() if v is not None}
         self.sources = {}
 
     def apply(self, key, op, value, source=""):
@@ -135,6 +148,11 @@ class StatBag:
         self.sources.setdefault(key, []).append((source, op, value))
 
     def get(self, key):
+        if key in self.overrides:          # a total typed in from the in-game System Page
+            return self.overrides[key]
+        return self.computed(key)
+
+    def computed(self, key):
         base = self.bases.get(key)
         if base is None:
             base = 1.0 if kind(key) == "pct" else 0.0
@@ -150,7 +168,7 @@ def _hive_stats(setup):
         "crit_power": s["base_crit_power"],
         "super_crit_power": s["base_super_crit_power"],
         "capacity_flat": 0.0,
-    })
+    }, setup.get("overrides"))
     for slot in GEAR_SLOTS:
         name = setup["gear"].get(slot)
         if name:
@@ -168,10 +186,46 @@ def _hive_stats(setup):
         for key, op, v in b.get("beequip_stats", []):
             if not key.startswith("bee:"):
                 hive.apply(key, op, v, f"{b.get('beequip')} ({b['type']})")
+    for cat, tier in (setup.get("badges") or {}).items():
+        for key, op, v in GAME.get("badges", {}).get(cat, {}).get(tier, []):
+            hive.apply(key, op, v, f"{cat} {tier} Badge")
     for row in setup["buffs"]:
         key, op, v = row[:3]
         hive.apply(key, op, v, row[3] if len(row) > 3 and row[3] else "Buff")
+    for name, effects in NECTARS.items():
+        pct = s.get(f"nectar_{name}", 0) / 100
+        if pct > 0:
+            for key, op, lo, hi in effects + [("honey_per_pollen", "mul", 1.01, 1.05)]:
+                hive.apply(key, op, lo + (hi - lo) * pct, f"{name.title()} Nectar")
+    n = min(max(s.get("balloon_blessing", 0), 0), 100)
+    if n:
+        hive.apply("capacity", "mul", 1 + 0.03 * n, "Balloon Blessing")
+        hive.apply("honey_at_hive", "mul", 1 + 0.015 * n, "Balloon Blessing")
+        hive.apply("honey_from_tokens", "add", 0.001 * n, "Balloon Blessing")
+    if s.get("polar_power"):
+        hive.apply("bee_energy", "add", 0.05 * s["polar_power"], "Polar Power")
+    if s.get("honeyday"):
+        hive.apply("pollen", "mul", 2, "Honeyday")
+        hive.apply("convert_rate", "mul", 2, "Honeyday")
+    for p in passives.star_passives(setup):
+        for key, op, v in passives.STAR_STATIC.get(p, []):
+            hive.apply(key, op, v, p)
     return hive
+
+
+# Nectar buffs (wiki Nectar page): (stat, op, value at 0% strength, value at 100%)
+NECTARS = {
+    "comforting": [("white_bee_convert_rate", "mul", 1.2, 2.0), ("blue_pollen", "mul", 1.1, 1.5),
+                   ("convert_rate_at_hive", "mul", 1.1, 2.0)],
+    "motivating": [("convert_rate", "mul", 1.1, 1.5), ("blue_pollen", "mul", 1.1, 1.5),
+                   ("bee_ability_rate", "add", 0.01, 0.05)],
+    "satisfying": [("red_bee_convert_rate", "mul", 1.2, 2.0), ("white_pollen", "mul", 1.2, 2.0),
+                   ("honey_at_hive", "mul", 1.05, 1.5)],
+    "refreshing": [("blue_bee_convert_rate", "mul", 1.2, 2.0), ("red_pollen", "mul", 1.1, 1.5),
+                   ("unique_instant_conversion", "add", 0.05, 0.20)],
+    "invigorating": [("convert_rate", "mul", 1.1, 1.5), ("red_pollen", "mul", 1.1, 1.5),
+                     ("attack_mult", "mul", 1.02, 1.10)],
+}
 
 
 def _crit_factor(cc, cp, scc, scp):
@@ -242,10 +296,16 @@ def _bee_rates(setup, hive, s):
         lvl = max(1, min(int(b["level"]), 25))
         gift = 1.5 if b["gifted"] else 1.0
 
-        gather = (base["gather"] + bs.adds.get("bee:gather", 0)) * (1 + 0.10 * (lvl - 1)) * gift * bs.muls.get("bee:gather", 1)
+        # levels: +5% gather and +10% convert per level (Bond page; matches the blue hive guide)
+        gather = (base["gather"] + bs.adds.get("bee:gather", 0)) * (1 + 0.05 * (lvl - 1)) * gift * bs.muls.get("bee:gather", 1)
         convert = ((base["convert"] + bs.adds.get("bee:convert", 0) + hive.get("convert_amount"))
                    * (1 + 0.10 * (lvl - 1)) * gift * bs.muls.get("bee:convert", 1)
-                   * hive.get("convert_rate") * hive.get("convert_rate_at_hive") * bs.get("bee:convert_at_hive"))
+                   * hive.get("convert_rate") * hive.get("convert_rate_at_hive") * bs.get("bee:convert_at_hive")
+                   * hive.get(f"{base['color']}_bee_convert_rate"))
+        attack = ((base["attack"] + hive.get("bee_attack") + hive.get(f"{base['color']}_bee_attack")
+                   + bs.adds.get("bee:attack", 0)) * hive.get("attack_mult") * bs.muls.get("bee:attack", 1) * gift)
+        if b["type"] == "Buoyant":   # Balloon Enthusiast: base attack scales up to x3 with Balloon Blessing
+            attack *= 1 + 2 * min(max(s.get("balloon_blessing", 0), 0), 100) / 100
         speed = ((base["speed"] + bs.adds.get("bee:speed", 0)) * (1 + 0.03 * (lvl - 1))
                  * bs.muls.get("bee:speed", 1) * hive.get("bee_movespeed"))
         if base["energy"] is None:
@@ -289,7 +349,7 @@ def _bee_rates(setup, hive, s):
         rows.append({
             "type": b["type"], "level": lvl, "gifted": b["gifted"], "beequip": b.get("beequip") or "",
             "gather": gather, "speed": speed, "energy": energy, "uptime": uptime,
-            "pollen_per_sec": 0.0, "convert_per_sec": convert_per_sec,
+            "pollen_per_sec": 0.0, "convert_per_sec": convert_per_sec, "convert": convert, "attack": attack,
             "_bs": bs, "_base": base, "_gps": gathers_per_sec,
         })
     gifted_blue = len({b["type"] for b in setup["bees"] if b["gifted"] and GAME["bees"][b["type"]]["color"] == "blue"})
@@ -364,12 +424,29 @@ def compute(setup, include_alts=True):
     color_pollen = {c: color_pollen[c] * buff["boost"][c] for c in COLORS}
     bee_gather_pollen *= buff["bee_gather"]
 
+    # ---------------- triggered passives (gear, Star Amulet) ----------------
+    convert_total = sum(r["convert"] for r in bee_rows)
+    passive_ctx = {
+        "hpp": hpp, "honey_from_tokens": hive.get("honey_from_tokens"), "convert_total": convert_total,
+        "avg_convert": convert_total / len(bee_rows) if bee_rows else 0.0,
+        "blue_bees": sum(GAME["bees"][b["type"]]["color"] == "blue" for b in setup["bees"]),
+        "gifted_blue_types": mine["gifted_blue_types"],
+        "own_bubbles_per_sec": sum(x[0] for x in mine["own_bubbles"]), "pop_pct": s["bubble_pop_pct"] / 100,
+        "catch_pct": s["star_catch_pct"] / 100,
+    }
+    passive_convert, pas, passive_detail = passives.triggered(tokens, setup, passive_ctx)
+    color_pollen["blue"] *= pas["blue_pollen"]
+    color_pollen["red"] *= pas["red_pollen"]
+    if pas["bubbles_per_sec"]:
+        avg_lvl = sum(r["level"] for r in bee_rows) / len(bee_rows) if bee_rows else 1
+        mine["own_bubbles"].append((pas["bubbles_per_sec"], avg_lvl, 1.0))
+    hive_convert *= pas["bloat"]   # Bubble Bloat multiplies Convert Rate at Hive
+
     # ---------------- bees: pollen (pass 2) ----------------
     bee_pollen = {c: 0.0 for c in COLORS}          # gross pollen/s by flower colour
     bee_instant = {c: 0.0 for c in COLORS}         # pollen/s converted by super-crits / bee-only instant conversion
     for row in bee_rows:
-        bs, base = row.pop("_bs"), row.pop("_base")
-        gps = row.pop("_gps")
+        bs, base, gps = row["_bs"], row["_base"], row["_gps"]
         cf, sup_share = _crit_factor(hive.get("crit_chance") + bs.get("bee:crit_chance") + buff["crit_chance"],
                                      hive.get("crit_power") + bs.get("bee:crit_power") + buff["crit_power"],
                                      hive.get("super_crit_chance") + bs.get("bee:super_crit_chance"),
@@ -437,29 +514,66 @@ def compute(setup, include_alts=True):
     ic = min(hive.get("instant_conversion"), 1.0)
     bag_rate = 0.0
     instant_pollen = 0.0
+    unique = min(hive.get("unique_instant_conversion"), 1.0)   # applied on its own (Refreshing Nectar, ...)
+    kept_by = {}
     for c in COLORS:
-        keep = (1 - min(hive.get(f"instant_{c}_conversion"), 1.0)) * (1 - ic)
+        colour_ic = hive.get(f"instant_{c}_conversion") + (pas["instant_blue"] if c == "blue" else 0.0)
+        keep = (1 - min(colour_ic, 1.0)) * (1 - ic) * (1 - unique)
         kept = ((bee_pollen[c] - bee_instant[c]) + tool_pollen[c] + bubble_pollen[c]
                 + (token_pollen[c] - token_instant[c])) * keep
+        kept_by[c] = kept
         bag_rate += kept
         instant_pollen += bee_pollen[c] + tool_pollen[c] + bubble_pollen[c] + token_pollen[c] - kept
     gross = (sum(bee_pollen.values()) + sum(tool_pollen.values()) + sum(bubble_pollen.values())
              + sum(token_pollen.values()))
 
-    field_cap = 1 + sum(frac[c] * (hive.get(f"{c}_field_capacity") - 1) for c in COLORS)
+    field_caps = {c: hive.get(f"{c}_field_capacity") * (pas["bloat"] if c == "blue" else 1.0) for c in COLORS}
+    field_cap = 1 + sum(frac[c] * (field_caps[c] - 1) for c in COLORS)
     capacity = hive.get("capacity_flat") * hive.get("capacity") * field_cap
+
+    # ---------------- balloons (Buoyant Bee) ----------------
+    # Pollen collected under a balloon's shadow goes into the balloon (+10%, +20% on blue flowers) instead of
+    # your bag, up to the balloon's capacity (your capacity / 6, gold x1.25). Balloons convert at the hive after
+    # your bag, and Buoyant Bees convert balloon pollen x3 (Balloon Enthusiast).
+    cover, hold, _, balloons_alive = passives.balloons(setup["bees"], bee_rows, hive.get("bee_ability_rate"),
+                                                       s["token_pickup_pct"] / 100, capacity, area)
+    balloon_rate = 0.0
+    if cover > 0:
+        to_balloon = {c: kept_by[c] * cover for c in COLORS}
+        boosted = sum(to_balloon[c] * (1.2 if c == "blue" else 1.1) for c in COLORS)
+        f = min(1.0, hold / boosted) if boosted > 0 else 0.0
+        balloon_rate = boosted * f
+        bag_rate -= sum(to_balloon.values()) * f
+    # Diamond Drain, Star Shower, Coin Scatter and Petal Storm convert pollen out of your bag while you gather
+    field_converted = min(passive_convert, max(bag_rate, 0.0) * 0.999)
+    bag_rate -= field_converted
+    instant_pollen += field_converted
+    balloon_convert = sum(r["convert_per_sec"] * (3 if r["type"] == "Buoyant" else 1) for r in bee_rows) * pas["bloat"]
+
+    # Shimmering Honey: Diamond Bees make +25% honey (+2.5% per level, doubled if gifted) when converting at the hive
+    def shimmer(weight):
+        total = sum(weight(r) for r in bee_rows)
+        bonus = sum(weight(r) * (0.25 + 0.025 * r["level"]) * (2 if r["gifted"] else 1)
+                    for r in bee_rows if r["type"] == "Diamond")
+        return 1 + bonus / total if total else 1.0
+    shimmer_bag = shimmer(lambda r: r["convert_per_sec"])
+    shimmer_balloon = shimmer(lambda r: r["convert_per_sec"] * (3 if r["type"] == "Buoyant" else 1))
 
     walk = 2 * s["hive_distance_studs"] / max(s["player_speed"] * buff["haste"], 1)
     honey_at_hive = hive.get("honey_at_hive")
+    balloon_trip = 0.0
     if bag_rate <= 0 or capacity <= 0:
         fill_time, convert_time = math.inf, 0.0
         honey_per_hour = instant_pollen * hpp * 3600
         cycle_time = math.inf
     else:
-        fill_time = capacity / bag_rate
-        convert_time = capacity / hive_convert if hive_convert > 0 else math.inf
+        fill_time = min(capacity / bag_rate, s["max_gather_minutes"] * 60)
+        in_bag = bag_rate * fill_time
+        balloon_trip = balloon_rate * fill_time
+        convert_time = ((in_bag / hive_convert + balloon_trip / balloon_convert) if hive_convert > 0 else math.inf)
         cycle_time = fill_time + walk + convert_time
-        honey_cycle = capacity * hpp * honey_at_hive + instant_pollen * hpp * fill_time
+        honey_cycle = ((in_bag * shimmer_bag + balloon_trip * shimmer_balloon) * hpp * honey_at_hive
+                       + instant_pollen * hpp * fill_time)
         honey_per_hour = honey_cycle / cycle_time * 3600 if math.isfinite(cycle_time) else 0.0
     # honey tokens only spawn while your bees are out gathering
     time_in_field = fill_time / cycle_time if cycle_time and math.isfinite(cycle_time) else 1.0
@@ -469,7 +583,8 @@ def compute(setup, include_alts=True):
                  "bubble_pollen", "capacity_flat", "capacity", "convert_rate", "convert_rate_at_hive", "convert_amount",
                  "honey_per_pollen", "instant_conversion", "instant_white_conversion", "instant_red_conversion",
                  "instant_blue_conversion", "crit_chance", "crit_power", "super_crit_chance", "bee_movespeed",
-                 "bee_energy", "bee_ability_rate", f"field_pollen:{setup['field']}"]
+                 "bee_energy", "bee_ability_rate", "honey_at_hive", "honey_from_tokens", "bomb_pollen",
+                 "blue_field_capacity", "attack_mult", "bee_attack", f"field_pollen:{setup['field']}"]
     return {
         "honey_per_hour": honey_per_hour,
         "honey_per_day": honey_per_hour * 24,
@@ -479,6 +594,17 @@ def compute(setup, include_alts=True):
         "bubble_pollen_per_sec": sum(bubble_pollen.values()),
         "ability_pollen_per_sec": sum(token_pollen.values()),
         "token_honey_per_hour": token_honey * time_in_field * 3600,
+        "passive_honey_per_hour": field_converted * hpp * time_in_field * 3600,
+        "field_converted_per_sec": field_converted,
+        "passives": passive_detail,
+        "pop_star": pas,
+        "balloon_pollen_per_sec": balloon_rate,
+        "balloons_alive": balloons_alive,
+        "balloon_cover": cover,
+        "balloon_per_trip": balloon_rate * fill_time if math.isfinite(fill_time) else 0.0,
+        "shimmering": shimmer_bag,
+        "attack_total": sum(r["attack"] for r in bee_rows),
+        "convert_total": convert_total,
         "tokens": token_detail,
         "buffs": buff,
         "bubble_sources": bubble_sources,
@@ -492,7 +618,7 @@ def compute(setup, include_alts=True):
         "cycle_time": cycle_time,
         "hive_convert_per_sec": hive_convert,
         "field_time_share": fill_time / cycle_time if cycle_time and math.isfinite(cycle_time) else 1.0,
-        "bees": bee_rows,
+        "bees": [{k: v for k, v in r.items() if not k.startswith("_")} for r in bee_rows],
         "natural_tier": natural_tier,
         "flower_tier": tier,
         "tier_dist": tier_dist,

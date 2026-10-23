@@ -13,7 +13,7 @@ def _normalise(setups):
     for s in setups:
         s["settings"] = {**DEFAULT_SETTINGS, **s.get("settings", {})}
         s.setdefault("gear", {}), s.setdefault("amulets", {}), s.setdefault("buffs", []), s.setdefault("bees", [])
-        s.setdefault("alts", [])
+        s.setdefault("alts", []), s.setdefault("badges", {}), s.setdefault("overrides", {})
     return setups or [new_setup()]
 
 

@@ -53,7 +53,13 @@
    "convert_time": 4.0,
    "tokens": "\u2013",
    "gifted_bonus_text": "+1 Bee Attack",
-   "gifted_effects": []
+   "gifted_effects": [
+    [
+     "bee_attack",
+     "add",
+     1
+    ]
+   ]
   },
   "Bumble": {
    "rarity": "Rare",
@@ -355,7 +361,13 @@
    "convert_time": 4.0,
    "tokens": "Token Link, Rage",
    "gifted_bonus_text": "+10% Bee Attack",
-   "gifted_effects": []
+   "gifted_effects": [
+    [
+     "attack_mult",
+     "add",
+     0.1
+    ]
+   ]
   },
   "Riley": {
    "rarity": "Epic",
@@ -997,6 +1009,11 @@
       1.5
      ],
      [
+      "blue_bee_convert_rate",
+      "add",
+      0.1
+     ],
+     [
       "instant_blue_conversion",
       "add",
       0.1
@@ -1007,9 +1024,7 @@
       0.1
      ]
     ],
-    "notes": [
-     "+10% Blue Bee Convert Rate"
-    ]
+    "notes": []
    },
    "Red Port-O-Hive": {
     "cost": "12,500,000 Honey, 2 Red Extracts, 2 Soft Wax",
@@ -1025,6 +1040,11 @@
       1.5
      ],
      [
+      "red_bee_convert_rate",
+      "add",
+      0.1
+     ],
+     [
       "instant_red_conversion",
       "add",
       0.1
@@ -1035,9 +1055,7 @@
       0.1
      ]
     ],
-    "notes": [
-     "+10% Red Bee Convert Rate"
-    ]
+    "notes": []
    },
    "Porcelain Port-O-Hive": {
     "cost": "250,000,000 Honey, 3 Glitter, 3 Soft Wax, 10 Moon Charms",
@@ -1229,6 +1247,11 @@
       1.5
      ],
      [
+      "attack_mult",
+      "add",
+      0.15
+     ],
+     [
       "bee_ability_rate",
       "add",
       0.15
@@ -1236,7 +1259,6 @@
     ],
     "notes": [
      "+50% Instant Flame Conversion",
-     "+15% Bee Attack",
      "+35% Defense",
      "Passive: Ignite"
     ]
@@ -1304,6 +1326,11 @@
       0.2
      ],
      [
+      "attack_mult",
+      "add",
+      0.25
+     ],
+     [
       "bee_ability_rate",
       "add",
       0.2
@@ -1312,7 +1339,6 @@
     "notes": [
      "+50% Instant Flame Conversion",
      "x1.25 Flame Pollen",
-     "+25% Bee Attack",
      "+35% Defense",
      "Passive: Ignite (Needs Fire Mask)",
      "Passive: X-Flame"
@@ -1412,11 +1438,14 @@
       "honey_from_tokens",
       "add",
       0.5
+     ],
+     [
+      "blue_bee_attack",
+      "add",
+      1.0
      ]
     ],
-    "notes": [
-     "+1 Blue Bee Attack"
-    ]
+    "notes": []
    },
    "Mondo B.B.M. Mask": {
     "cost": "",
@@ -1445,11 +1474,14 @@
       "honey_from_tokens",
       "add",
       0.5
+     ],
+     [
+      "bee_attack",
+      "add",
+      1.0
      ]
     ],
-    "notes": [
-     "+1 Bee Attack"
-    ]
+    "notes": []
    }
   },
   "left_guard": {
@@ -1507,11 +1539,15 @@
       "red_pollen",
       "add",
       0.15
+     ],
+     [
+      "red_bee_attack",
+      "add",
+      1.0
      ]
     ],
     "notes": [
-     "+5% Defense",
-     "+1 Red Bee Attack"
+     "+5% Defense"
     ]
    },
    "Elite Red Guard": {
@@ -1531,11 +1567,15 @@
       "crit_chance",
       "add",
       0.05
+     ],
+     [
+      "red_bee_attack",
+      "add",
+      1.0
      ]
     ],
     "notes": [
-     "+7% Defense",
-     "+1 Red Bee Attack"
+     "+7% Defense"
     ]
    },
    "Riley Guard": {
@@ -1555,11 +1595,15 @@
       "crit_chance",
       "add",
       0.08
+     ],
+     [
+      "red_bee_attack",
+      "add",
+      2.0
      ]
     ],
     "notes": [
-     "+10% Defense",
-     "+2 Red Bee Attack"
+     "+10% Defense"
     ]
    },
    "Crimson Guard": {
@@ -1581,13 +1625,17 @@
       0.2
      ],
      [
+      "red_bee_attack",
+      "add",
+      3.0
+     ],
+     [
       "crit_chance",
       "add",
       0.1
      ]
     ],
     "notes": [
-     "+3 Red Bee Attack",
      "+10% Defense",
      "Passive: Focus Pulser"
     ]
@@ -1606,11 +1654,14 @@
       "white_pollen",
       "add",
       0.05
+     ],
+     [
+      "white_bee_attack",
+      "add",
+      1.0
      ]
     ],
-    "notes": [
-     "+1 Colorless Bee Attack"
-    ]
+    "notes": []
    },
    "Hasty Guard": {
     "cost": "300,000 Honey and 5 Moon Charms.",
@@ -1645,11 +1696,15 @@
       "blue_pollen",
       "add",
       0.15
+     ],
+     [
+      "blue_bee_attack",
+      "add",
+      1.0
      ]
     ],
     "notes": [
-     "+5% Defense",
-     "+1 Blue Bee Attack"
+     "+5% Defense"
     ]
    },
    "Elite Blue Guard": {
@@ -1669,11 +1724,15 @@
       "crit_power",
       "add",
       0.5
+     ],
+     [
+      "blue_bee_attack",
+      "add",
+      1.0
      ]
     ],
     "notes": [
-     "+7% Defense",
-     "+1 Blue Bee Attack"
+     "+7% Defense"
     ]
    },
    "Bucko Guard": {
@@ -1695,14 +1754,18 @@
       0.75
      ],
      [
+      "blue_bee_attack",
+      "add",
+      2.0
+     ],
+     [
       "blue_bomb_pollen",
       "add",
       0.1
      ]
     ],
     "notes": [
-     "+10% Defense",
-     "+2 Blue Bee Attack"
+     "+10% Defense"
     ]
    },
    "Cobalt Guard": {
@@ -1724,13 +1787,17 @@
       0.2
      ],
      [
+      "blue_bee_attack",
+      "add",
+      3.0
+     ],
+     [
       "crit_power",
       "add",
       1.0
      ]
     ],
     "notes": [
-     "+3 Blue Bee Attack",
      "+10% Defense",
      "Passive: Haste Pulser"
     ]
@@ -1818,11 +1885,15 @@
       "honey_from_tokens",
       "add",
       0.5
+     ],
+     [
+      "white_bee_attack",
+      "add",
+      1.0
      ]
     ],
     "notes": [
-     "+100% Loot Luck",
-     "+1 Colorless Bee Attack"
+     "+100% Loot Luck"
     ]
    },
    "Petal Belt": {
@@ -1852,11 +1923,15 @@
       "buzz_bomb_pollen",
       "add",
       0.3
+     ],
+     [
+      "white_bee_attack",
+      "add",
+      1.0
      ]
     ],
     "notes": [
      "+101% Loot Luck",
-     "+1 Colorless Bee Attack",
      "Passive: Petal Storm"
     ]
    },
@@ -1892,11 +1967,15 @@
       "gifted_bee_pollen",
       "add",
       0.1
+     ],
+     [
+      "bee_attack",
+      "add",
+      1.0
      ]
     ],
     "notes": [
      "+102% Loot Luck",
-     "+1 Bee Attack",
      "Passive: Petal Storm (Needs Petal Belt)",
      "Passive: Combo Coconuts"
     ]
@@ -1931,11 +2010,15 @@
       "movement_collection",
       "add",
       6.0
+     ],
+     [
+      "bee_attack",
+      "add",
+      1.0
      ]
     ],
     "notes": [
-     "+10 Jump Power",
-     "+1 Bee Attack"
+     "+10 Jump Power"
     ]
    },
    "Beekeeper's Boots": {
@@ -1955,11 +2038,15 @@
       "movement_collection",
       "add",
       10.0
+     ],
+     [
+      "bee_attack",
+      "add",
+      1.0
      ]
     ],
     "notes": [
-     "+20 Jump Power",
-     "+1 Bee Attack"
+     "+20 Jump Power"
     ]
    },
    "Coconut Clogs": {
@@ -1981,6 +2068,11 @@
       0.25
      ],
      [
+      "bee_attack",
+      "add",
+      2.0
+     ],
+     [
       "player_movespeed_flat",
       "add",
       7.0
@@ -1992,7 +2084,6 @@
      ]
     ],
     "notes": [
-     "+2 Bee Attack",
      "+22 Jump Power",
      "Passive: Coconut Haste"
     ]
@@ -2011,6 +2102,11 @@
       0.5
      ],
      [
+      "bee_attack",
+      "add",
+      3.0
+     ],
+     [
       "player_movespeed_flat",
       "add",
       9.0
@@ -2023,7 +2119,6 @@
     ],
     "notes": [
      "+25% Goo",
-     "+3 Bee Attack",
      "+22 Jump Power",
      "Passive: Coconut Haste",
      "Passive: Goo Trail"
@@ -13725,6 +13820,822 @@
       }
      ]
     }
+   ]
+  }
+ },
+ "badges": {
+  "Honey": {
+   "Cadet": [
+    [
+     "convert_rate",
+     "mul",
+     1.3
+    ]
+   ],
+   "Hotshot": [
+    [
+     "convert_rate",
+     "mul",
+     1.6
+    ]
+   ],
+   "Ace": [
+    [
+     "convert_rate",
+     "mul",
+     1.9
+    ]
+   ],
+   "Master": [
+    [
+     "convert_rate",
+     "mul",
+     2.2
+    ]
+   ],
+   "Grandmaster": [
+    [
+     "convert_rate",
+     "mul",
+     2.5
+    ]
+   ]
+  },
+  "Quest": {
+   "Cadet": [
+    [
+     "capacity",
+     "mul",
+     1.25
+    ]
+   ],
+   "Hotshot": [
+    [
+     "capacity",
+     "mul",
+     1.5
+    ]
+   ],
+   "Ace": [
+    [
+     "capacity",
+     "mul",
+     1.75
+    ]
+   ],
+   "Master": [
+    [
+     "capacity",
+     "mul",
+     2.0
+    ]
+   ],
+   "Grandmaster": [
+    [
+     "capacity",
+     "mul",
+     2.25
+    ]
+   ]
+  },
+  "Battle": {
+   "Cadet": [
+    [
+     "crit_power",
+     "add",
+     0.1
+    ]
+   ],
+   "Hotshot": [
+    [
+     "crit_power",
+     "add",
+     0.2
+    ]
+   ],
+   "Ace": [
+    [
+     "crit_power",
+     "add",
+     0.4
+    ]
+   ],
+   "Master": [
+    [
+     "crit_power",
+     "add",
+     0.7
+    ]
+   ],
+   "Grandmaster": [
+    [
+     "crit_power",
+     "add",
+     1.0
+    ]
+   ]
+  },
+  "Ability": {
+   "Cadet": [
+    [
+     "capacity_flat",
+     "add",
+     25000.0
+    ]
+   ],
+   "Hotshot": [
+    [
+     "capacity_flat",
+     "add",
+     50000.0
+    ]
+   ],
+   "Ace": [
+    [
+     "capacity_flat",
+     "add",
+     100000.0
+    ]
+   ],
+   "Master": [
+    [
+     "capacity_flat",
+     "add",
+     150000.0
+    ]
+   ],
+   "Grandmaster": [
+    [
+     "capacity_flat",
+     "add",
+     250000.0
+    ]
+   ]
+  },
+  "Goo": {
+   "Cadet": [
+    [
+     "honey_per_pollen",
+     "add",
+     0.02
+    ]
+   ],
+   "Hotshot": [
+    [
+     "honey_per_pollen",
+     "add",
+     0.04
+    ]
+   ],
+   "Ace": [
+    [
+     "honey_per_pollen",
+     "add",
+     0.06
+    ]
+   ],
+   "Master": [
+    [
+     "honey_per_pollen",
+     "add",
+     0.08
+    ]
+   ],
+   "Grandmaster": [
+    [
+     "honey_per_pollen",
+     "add",
+     0.1
+    ]
+   ]
+  },
+  "Playtime": {
+   "Cadet": [
+    [
+     "bee_movespeed",
+     "add",
+     0.01
+    ]
+   ],
+   "Hotshot": [
+    [
+     "bee_movespeed",
+     "add",
+     0.02
+    ]
+   ],
+   "Ace": [
+    [
+     "bee_movespeed",
+     "add",
+     0.03
+    ]
+   ],
+   "Master": [
+    [
+     "bee_movespeed",
+     "add",
+     0.04
+    ]
+   ],
+   "Grandmaster": [
+    [
+     "bee_movespeed",
+     "add",
+     0.05
+    ]
+   ]
+  },
+  "Sticker Stack": {
+   "Cadet": [
+    [
+     "bee_gather_pollen",
+     "add",
+     0.05
+    ]
+   ],
+   "Hotshot": [
+    [
+     "bee_gather_pollen",
+     "add",
+     0.1
+    ]
+   ],
+   "Ace": [
+    [
+     "bee_gather_pollen",
+     "add",
+     0.15
+    ]
+   ],
+   "Master": [
+    [
+     "bee_gather_pollen",
+     "add",
+     0.2
+    ]
+   ],
+   "Grandmaster": [
+    [
+     "bee_gather_pollen",
+     "add",
+     0.25
+    ]
+   ]
+  },
+  "Sunflower": {
+   "Cadet": [
+    [
+     "capacity",
+     "add",
+     0.1
+    ]
+   ],
+   "Hotshot": [
+    [
+     "capacity",
+     "add",
+     0.2
+    ]
+   ],
+   "Ace": [
+    [
+     "capacity",
+     "add",
+     0.3
+    ]
+   ],
+   "Master": [
+    [
+     "capacity",
+     "add",
+     0.4
+    ]
+   ],
+   "Grandmaster": [
+    [
+     "capacity",
+     "add",
+     0.5
+    ]
+   ]
+  },
+  "Dandelion": {
+   "Cadet": [
+    [
+     "honey_at_hive",
+     "add",
+     0.03
+    ]
+   ],
+   "Hotshot": [
+    [
+     "honey_at_hive",
+     "add",
+     0.06
+    ]
+   ],
+   "Ace": [
+    [
+     "honey_at_hive",
+     "add",
+     0.09
+    ]
+   ],
+   "Master": [
+    [
+     "honey_at_hive",
+     "add",
+     0.12
+    ]
+   ],
+   "Grandmaster": [
+    [
+     "honey_at_hive",
+     "add",
+     0.15
+    ]
+   ]
+  },
+  "Mushroom": {
+   "Cadet": [
+    [
+     "instant_red_conversion",
+     "add",
+     0.03
+    ]
+   ],
+   "Hotshot": [
+    [
+     "instant_red_conversion",
+     "add",
+     0.06
+    ]
+   ],
+   "Ace": [
+    [
+     "instant_red_conversion",
+     "add",
+     0.09
+    ]
+   ],
+   "Master": [
+    [
+     "instant_red_conversion",
+     "add",
+     0.12
+    ]
+   ],
+   "Grandmaster": [
+    [
+     "instant_red_conversion",
+     "add",
+     0.15
+    ]
+   ]
+  },
+  "Blue Flower": {
+   "Cadet": [
+    [
+     "instant_blue_conversion",
+     "add",
+     0.03
+    ]
+   ],
+   "Hotshot": [
+    [
+     "instant_blue_conversion",
+     "add",
+     0.06
+    ]
+   ],
+   "Ace": [
+    [
+     "instant_blue_conversion",
+     "add",
+     0.09
+    ]
+   ],
+   "Master": [
+    [
+     "instant_blue_conversion",
+     "add",
+     0.12
+    ]
+   ],
+   "Grandmaster": [
+    [
+     "instant_blue_conversion",
+     "add",
+     0.15
+    ]
+   ]
+  },
+  "Spider": {
+   "Cadet": [
+    [
+     "white_pollen",
+     "add",
+     0.1
+    ]
+   ],
+   "Hotshot": [
+    [
+     "white_pollen",
+     "add",
+     0.15
+    ]
+   ],
+   "Ace": [
+    [
+     "white_pollen",
+     "add",
+     0.2
+    ]
+   ],
+   "Master": [
+    [
+     "white_pollen",
+     "add",
+     0.25
+    ]
+   ],
+   "Grandmaster": [
+    [
+     "white_pollen",
+     "add",
+     0.3
+    ]
+   ]
+  },
+  "Strawberry": {
+   "Cadet": [
+    [
+     "red_pollen",
+     "add",
+     0.05
+    ]
+   ],
+   "Hotshot": [
+    [
+     "red_pollen",
+     "add",
+     0.1
+    ]
+   ],
+   "Ace": [
+    [
+     "red_pollen",
+     "add",
+     0.15
+    ]
+   ],
+   "Master": [
+    [
+     "red_pollen",
+     "add",
+     0.2
+    ]
+   ],
+   "Grandmaster": [
+    [
+     "red_pollen",
+     "add",
+     0.25
+    ]
+   ]
+  },
+  "Bamboo": {
+   "Cadet": [
+    [
+     "blue_pollen",
+     "add",
+     0.05
+    ]
+   ],
+   "Hotshot": [
+    [
+     "blue_pollen",
+     "add",
+     0.1
+    ]
+   ],
+   "Ace": [
+    [
+     "blue_pollen",
+     "add",
+     0.15
+    ]
+   ],
+   "Master": [
+    [
+     "blue_pollen",
+     "add",
+     0.2
+    ]
+   ],
+   "Grandmaster": [
+    [
+     "blue_pollen",
+     "add",
+     0.25
+    ]
+   ]
+  },
+  "Pineapple": {
+   "Cadet": [
+    [
+     "instant_white_conversion",
+     "add",
+     0.03
+    ]
+   ],
+   "Hotshot": [
+    [
+     "instant_white_conversion",
+     "add",
+     0.06
+    ]
+   ],
+   "Ace": [
+    [
+     "instant_white_conversion",
+     "add",
+     0.09
+    ]
+   ],
+   "Master": [
+    [
+     "instant_white_conversion",
+     "add",
+     0.12
+    ]
+   ],
+   "Grandmaster": [
+    [
+     "instant_white_conversion",
+     "add",
+     0.15
+    ]
+   ]
+  },
+  "Pumpkin": {
+   "Cadet": [
+    [
+     "convert_rate_at_hive",
+     "mul",
+     1.2
+    ]
+   ],
+   "Hotshot": [
+    [
+     "convert_rate_at_hive",
+     "mul",
+     1.4
+    ]
+   ],
+   "Ace": [
+    [
+     "convert_rate_at_hive",
+     "mul",
+     1.6
+    ]
+   ],
+   "Master": [
+    [
+     "convert_rate_at_hive",
+     "mul",
+     1.8
+    ]
+   ],
+   "Grandmaster": [
+    [
+     "convert_rate_at_hive",
+     "mul",
+     2.0
+    ]
+   ]
+  },
+  "Cactus": {
+   "Cadet": [
+    [
+     "instant_conversion",
+     "add",
+     0.01
+    ]
+   ],
+   "Hotshot": [
+    [
+     "instant_conversion",
+     "add",
+     0.02
+    ]
+   ],
+   "Ace": [
+    [
+     "instant_conversion",
+     "add",
+     0.03
+    ]
+   ],
+   "Master": [
+    [
+     "instant_conversion",
+     "add",
+     0.04
+    ]
+   ],
+   "Grandmaster": [
+    [
+     "instant_conversion",
+     "add",
+     0.05
+    ]
+   ]
+  },
+  "Rose": {
+   "Cadet": [
+    [
+     "red_field_capacity",
+     "add",
+     0.05
+    ]
+   ],
+   "Hotshot": [
+    [
+     "red_field_capacity",
+     "add",
+     0.1
+    ]
+   ],
+   "Ace": [
+    [
+     "red_field_capacity",
+     "add",
+     0.15
+    ]
+   ],
+   "Master": [
+    [
+     "red_field_capacity",
+     "add",
+     0.2
+    ]
+   ],
+   "Grandmaster": [
+    [
+     "red_field_capacity",
+     "add",
+     0.25
+    ]
+   ]
+  },
+  "Pine Tree": {
+   "Cadet": [
+    [
+     "blue_field_capacity",
+     "add",
+     0.05
+    ]
+   ],
+   "Hotshot": [
+    [
+     "blue_field_capacity",
+     "add",
+     0.1
+    ]
+   ],
+   "Ace": [
+    [
+     "blue_field_capacity",
+     "add",
+     0.15
+    ]
+   ],
+   "Master": [
+    [
+     "blue_field_capacity",
+     "add",
+     0.2
+    ]
+   ],
+   "Grandmaster": [
+    [
+     "blue_field_capacity",
+     "add",
+     0.25
+    ]
+   ]
+  },
+  "Stump": {
+   "Cadet": [
+    [
+     "tool_pollen",
+     "add",
+     0.05
+    ]
+   ],
+   "Hotshot": [
+    [
+     "tool_pollen",
+     "add",
+     0.1
+    ]
+   ],
+   "Ace": [
+    [
+     "tool_pollen",
+     "add",
+     0.15
+    ]
+   ],
+   "Master": [
+    [
+     "tool_pollen",
+     "add",
+     0.2
+    ]
+   ],
+   "Grandmaster": [
+    [
+     "tool_pollen",
+     "add",
+     0.25
+    ]
+   ]
+  },
+  "Coconut": {
+   "Cadet": [
+    [
+     "white_pollen",
+     "mul",
+     1.04
+    ]
+   ],
+   "Hotshot": [
+    [
+     "white_pollen",
+     "mul",
+     1.08
+    ]
+   ],
+   "Ace": [
+    [
+     "white_pollen",
+     "mul",
+     1.12
+    ]
+   ],
+   "Master": [
+    [
+     "white_pollen",
+     "mul",
+     1.16
+    ]
+   ],
+   "Grandmaster": [
+    [
+     "white_pollen",
+     "mul",
+     1.2
+    ]
+   ]
+  },
+  "Mountain Top": {
+   "Cadet": [
+    [
+     "gifted_bee_pollen",
+     "add",
+     0.01
+    ]
+   ],
+   "Hotshot": [
+    [
+     "gifted_bee_pollen",
+     "add",
+     0.02
+    ]
+   ],
+   "Ace": [
+    [
+     "gifted_bee_pollen",
+     "add",
+     0.03
+    ]
+   ],
+   "Master": [
+    [
+     "gifted_bee_pollen",
+     "add",
+     0.04
+    ]
+   ],
+   "Grandmaster": [
+    [
+     "gifted_bee_pollen",
+     "add",
+     0.05
+    ]
    ]
   }
  }

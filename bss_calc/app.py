@@ -10,8 +10,9 @@ import flet as ft
 from . import storage
 from .data import GAME
 from .abilities import NOT_MODELLED
+from .passives import STAR_PASSIVES
 from .engine import GEAR_SLOTS, alt_impact, compute, new_alt, new_bee, new_setup, sensitivity, token_interval
-from .stats import (AMULET_GROUPS, BEE_KEYS, HIVE_KEYS, amulet_pool, amulet_rows, beequip_allowed, beequip_possible,
+from .stats import (STAT_DEFS, AMULET_GROUPS, BEE_KEYS, HIVE_KEYS, amulet_pool, amulet_rows, beequip_allowed, beequip_possible,
                     beequip_rows, describe, from_display, kind, label, to_display)
 
 # black / dark grey / grey / white palette
@@ -52,6 +53,12 @@ SETTING_INFO = [
     ("triangle_flowers", "Flowers in a Triangulate triangle", "flat", "Average flowers inside Vector Bee's triangle."),
     ("targets_hit", "Target Practice targets hit (0-3)", "flat", "Precise Bee targets you walk over."),
     ("tabby_love_stacks", "Tabby Love stacks", "flat", "Your Tabby Love stacks (0-1000): +1% Tabby Scratch pollen each."),
+    ("balloon_blessing", "Balloon Blessing stacks (0-100)", "flat",
+     "From your buff bar. Each stack is x1.03 Capacity and x1.015 Honey at Hive (x4 and x2.5 at 100)."),
+    ("polar_power", "Polar Power stacks", "flat", "Each stack gives +5% bee energy."),
+    ("max_gather_minutes", "Gather time before converting (min)", "flat",
+     "You convert when the bag is full or after this long (macros usually use about 14 min)."),
+    ("star_catch_pct", "Star Shower stars caught %", "flat", "Shooting stars you catch (each converts 1M + 200% Convert Total)."),
     ("sleep_time", "Bee sleep time (s)", "flat", "Time a bee rests in the hive after running out of energy."),
     ("gather_area_flowers", "Gathering area (flowers)", "flat",
      "Flowers around you that your bees and tool work. Pollination is spread over these."),
@@ -279,6 +286,7 @@ class App:
                 ft.NavigationRailDestination(icon=ft.Icons.HIVE_OUTLINED, selected_icon=ft.Icons.HIVE, label="Setup"),
                 ft.NavigationRailDestination(icon=ft.Icons.INSIGHTS_OUTLINED, selected_icon=ft.Icons.INSIGHTS, label="Results"),
                 ft.NavigationRailDestination(icon=ft.Icons.COMPARE_ARROWS, label="Compare"),
+                ft.NavigationRailDestination(icon=ft.Icons.MENU_BOOK_OUTLINED, selected_icon=ft.Icons.MENU_BOOK, label="Guide"),
                 ft.NavigationRailDestination(icon=ft.Icons.INFO_OUTLINE, selected_icon=ft.Icons.INFO, label="How it works"),
             ],
         )
@@ -329,7 +337,7 @@ class App:
 
     def _show(self, idx):
         self.rail.selected_index = idx
-        self.body.content = [self.setup_view, self.results_view, self.compare_view, self.about_view][idx]()
+        self.body.content = [self.setup_view, self.results_view, self.compare_view, self.guide_view, self.about_view][idx]()
         self.page.update()
 
     def _nav(self, e):
@@ -404,8 +412,9 @@ class App:
 
     # ------------------------------------------------------------ SETUP VIEW
     def setup_view(self):
-        tabs = [("Hive", self.hive_tab), ("Gear", self.gear_tab), ("Amulets", self.amulet_tab),
-                ("Buffs", self.buff_tab), ("Alts", self.alt_tab), ("Field & Settings", self.settings_tab)]
+        tabs = [("Hive", self.hive_tab), ("Gear", self.gear_tab), ("Amulets", self.amulet_tab), ("Badges", self.badge_tab),
+                ("Buffs & Items", self.buff_tab), ("Alts", self.alt_tab), ("Field & Settings", self.settings_tab),
+                ("System Page", self.overrides_tab)]
         return ft.Tabs(
             length=len(tabs), selected_index=0, expand=True,
             content=ft.Column(expand=True, controls=[
@@ -879,6 +888,7 @@ class App:
     # ---- amulets
     def amulet_tab(self):
         cards = []
+        builders = {}
         for group, names in AMULET_GROUPS.items():
             am = self.s["amulets"].setdefault(group, {"name": None, "stats": []})
             body = ft.Column(spacing=6)
@@ -910,11 +920,33 @@ class App:
                 am["stats"] = amulet_rows(am["name"]) if am["name"] else []
                 pic.content = (img("amulet", am["name"], 56) if am["name"] else
                                ft.Icon(ft.Icons.CIRCLE_OUTLINED, color=LINE, size=40))
-                build()
+                builders[group]()
                 body.update()
                 pic.update()
                 self.changed()
 
+            if group == "Star":
+                inner_build = build
+
+                def build(am=am, body=body, inner_build=inner_build):
+                    inner_build()
+                    allowed = STAR_PASSIVES.get(am.get("name") or "", [])
+                    if not allowed:
+                        return
+                    chosen = am.setdefault("passives", [])
+
+                    def toggle(e, p):
+                        if e.control.value and p not in chosen:
+                            chosen.append(p)
+                        elif not e.control.value and p in chosen:
+                            chosen.remove(p)
+                        self.changed()
+
+                    body.controls.append(ft.Text("Passives on your amulet", weight=ft.FontWeight.BOLD, size=12))
+                    body.controls.append(ft.Row([ft.Checkbox(label=p, value=p in chosen,
+                                                             on_change=lambda e, p=p: toggle(e, p)) for p in allowed],
+                                                wrap=True))
+            builders[group] = build
             build()
             cards.append(card(f"{group} Amulet", ft.Row([pic, ft.Dropdown(
                 value=am.get("name") or NONE, options=img_opts("amulet", [(NONE, "None")] + [(n, n) for n in names]),
@@ -939,14 +971,31 @@ class App:
             return go
 
         f = self.s["field"]
-        presets = [
-            ("Field Boost x2 (current field)", [[f"field_pollen:{f}", "add", 1.0, "Field Boost"]]),
-            ("Glue", [["tool_pollen", "mul", 1.25, "Glue"], ["bee_gather_pollen", "mul", 1.25, "Glue"]]),
-            ("Purple Potion", [["capacity", "mul", 1.25, "Purple Potion"], ["convert_rate_at_hive", "mul", 1.25, "Purple Potion"],
-                               ["red_pollen", "mul", 1.5, "Purple Potion"], ["blue_pollen", "mul", 1.5, "Purple Potion"],
-                               ["bee_gather_pollen", "mul", 1.3, "Purple Potion"], ["tool_pollen", "mul", 1.3, "Purple Potion"]]),
+        def item(name, *rows_):
+            return (name, [list(r) + [name] for r in rows_])
+
+        presets = [   # values from the wiki's Buffs & Debuffs page
+            item("Field Boost x2", (f"field_pollen:{f}", "add", 1.0)),
+            item("Field Boost x5 (max)", (f"field_pollen:{f}", "add", 4.0)),
+            item("Super Smoothie", ("capacity", "mul", 1.5), ("red_pollen", "mul", 1.6), ("blue_pollen", "mul", 1.6),
+                 ("white_pollen", "mul", 1.6), ("bee_gather_pollen", "mul", 1.4), ("tool_pollen", "mul", 1.4),
+                 ("convert_rate", "mul", 2), ("convert_rate_at_hive", "mul", 1.5), ("instant_conversion", "add", 0.12),
+                 ("crit_chance", "add", 0.07), ("bee_movespeed", "mul", 1.25)),
+            item("Purple Potion", ("capacity", "mul", 1.25), ("red_pollen", "mul", 1.5), ("blue_pollen", "mul", 1.5),
+                 ("bee_gather_pollen", "mul", 1.3), ("tool_pollen", "mul", 1.3)),
+            item("Tropical Drink", ("white_pollen", "mul", 1.25), ("instant_conversion", "add", 0.10), ("crit_chance", "add", 0.05)),
+            item("Blue Extract", ("blue_pollen", "mul", 1.25)),
+            item("Red Extract", ("red_pollen", "mul", 1.25)),
+            item("Glue", ("bee_gather_pollen", "mul", 1.25), ("tool_pollen", "mul", 1.25)),
+            item("Enzymes", ("convert_rate", "mul", 1.25), ("instant_conversion", "add", 0.10)),
+            item("Oil", ("bee_movespeed", "mul", 1.2), ("player_movespeed_flat", "add", 0)),
+            item("Marshmallow Bee", ("white_pollen", "add", 0.5), ("capacity", "add", 0.5), ("convert_rate", "add", 2.5)),
+            item("Cool Breeze (max)", ("convert_rate_at_hive", "add", 0.25), ("tool_pollen", "add", 0.25),
+                 ("bee_gather_pollen", "add", 0.25), ("honey_per_pollen", "add", 0.05), ("capacity", "mul", 1.25)),
+            item("Stinger", ("attack_mult", "mul", 1.5)),
         ]
         return ft.ListView(expand=True, controls=[
+            ft.Text("Items and boosts you keep running. Each button adds the item's exact wiki buff.", size=12, color=MUTED),
             ft.Row([ft.Text("Quick add:")] + [ft.OutlinedButton(content=n, on_click=preset(r)) for n, r in presets], wrap=True),
             rows.view])
 
@@ -1134,8 +1183,108 @@ class App:
                                                dense=True, on_change=set_),
                                   ft.Text(help_, size=11, expand=True, color=ft.Colors.ON_SURFACE_VARIANT)]))
 
+        def set_honeyday(e):
+            st["honeyday"] = e.control.value
+            self.changed()
+
+        nectar_rows = []
+        for n in ("comforting", "motivating", "satisfying", "refreshing", "invigorating"):
+            lbl = ft.Text(f"{st[f'nectar_{n}']:.0f}%", width=44)
+
+            def set_nectar(e, n=n, lbl=lbl):
+                st[f"nectar_{n}"] = float(e.control.value)
+                lbl.value = f"{st[f'nectar_{n}']:.0f}%"
+                lbl.update()
+                self.changed()
+
+            nectar_rows.append(ft.Row([ft.Text(n.title(), width=110), ft.Slider(min=0, max=100, divisions=20,
+                                       value=st[f"nectar_{n}"], expand=True, on_change_end=set_nectar), lbl]))
+        controls.append(card(
+            "Nectars & event buffs",
+            ft.Text("Nectar strength scales with time left (100% = 24 h). Each nectar also gives up to x1.05 Honey Per Pollen.",
+                    size=11, color=MUTED),
+            *nectar_rows,
+            ft.Switch(label="Honeyday (x2 Pollen and Convert Rate)", value=bool(st.get("honeyday")), on_change=set_honeyday)))
         controls.append(card("Model settings", *fields))
         return ft.ListView(expand=True, controls=controls, spacing=10)
+
+    # ---- badges
+    def badge_tab(self):
+        badges = self.s.setdefault("badges", {})
+        tiers = ["Cadet", "Hotshot", "Ace", "Master", "Grandmaster"]
+        cards = []
+        for cat, by_tier in GAME.get("badges", {}).items():
+            info = ft.Text(size=11, color=MUTED)
+
+            def show(cat=cat, info=info):
+                tier = badges.get(cat)
+                info.value = (", ".join(describe(*x) for x in GAME["badges"][cat][tier]) if tier else "No badge")
+
+            def set_tier(e, cat=cat, info=info, show=show):
+                if e.control.value == NONE:
+                    badges.pop(cat, None)
+                else:
+                    badges[cat] = e.control.value
+                show()
+                info.update()
+                self.changed()
+
+            show()
+            cards.append(ft.Container(col={"xs": 12, "md": 6, "xl": 4}, content=card(
+                f"{cat} Badge", ft.Dropdown(value=badges.get(cat, NONE), options=opts([(NONE, "None")] + [(t, t) for t in tiers]),
+                                            width=200, dense=True, on_select=set_tier), info)))
+
+        def all_gm(e):
+            for cat in GAME.get("badges", {}):
+                badges[cat] = "Grandmaster"
+            self.changed()
+            self._show(0)
+
+        return ft.ListView(expand=True, spacing=10, controls=[
+            ft.Row([ft.Text("Your badge tiers (System Page → Badges). Higher tiers replace lower ones.", size=12),
+                    ft.TextButton(content="Set all to Grandmaster", on_click=all_gm)], wrap=True),
+            ft.ResponsiveRow(cards)])
+
+    # ---- system page overrides
+    def overrides_tab(self):
+        ov = self.s.setdefault("overrides", {})
+        r = compute({**self.s, "overrides": {}})
+        keys = [k for k in r["stats"] if not k.startswith("field_pollen")] + ["bubble_pollen", "bomb_pollen", "white_field_capacity",
+                                                                           "red_field_capacity", "unique_instant_conversion"]
+        seen, rows = set(), []
+        for k in keys:
+            if k in seen or k not in STAT_DEFS:
+                continue
+            seen.add(k)
+            computed = r["stats"].get(k)
+            if computed is None:
+                from .engine import _hive_stats
+                computed = _hive_stats({**self.s, "overrides": {}}).get(k)
+
+            def set_ov(e, k=k):
+                txt = e.control.value.strip()
+                if txt == "":
+                    ov.pop(k, None)
+                else:
+                    ov[k] = num(txt) / 100 if kind(k) != "flat" else num(txt)
+                self.changed()
+
+            cur = ov.get(k)
+            shown = "" if cur is None else (f"{cur * 100:g}" if kind(k) != "flat" else f"{cur:g}")
+            rows.append(ft.Row([ft.Text(label(k), width=230), ft.Text(fmt_stat(k, computed), width=110, color=MUTED),
+                                ft.TextField(value=shown, hint_text="auto", width=130, dense=True, on_change=set_ov),
+                                ft.Text("%" if kind(k) != "flat" else "", width=20)]))
+        return ft.ListView(expand=True, spacing=6, controls=[
+            ft.Text("Type in the totals from your in-game System Page to replace the calculated ones. They then include "
+                    "everything the app can't see: the sticker stack, Robo upgrades, hive bonuses and so on. Leave a box empty "
+                    "to use the calculated value. Take the numbers with no temporary buffs running (no boosts, items or "
+                    "tokens), because the app adds those itself.", size=12, color=MUTED),
+            ft.Row([ft.Text("Stat", width=230, weight=ft.FontWeight.BOLD),
+                    ft.Text("Calculated", width=110, weight=ft.FontWeight.BOLD),
+                    ft.Text("Your System Page", width=150, weight=ft.FontWeight.BOLD)]),
+            *rows,
+            ft.TextButton(content="Clear all overrides", icon=ft.Icons.RESTART_ALT,
+                          on_click=lambda e: (ov.clear(), self.changed(), self._show(0)))])
 
     # ------------------------------------------------------------ RESULTS
     def results_view(self):
@@ -1144,6 +1293,8 @@ class App:
         boxes = ft.Row(wrap=True, spacing=10, controls=[
             stat_box("Honey / hour", fmt(r["honey_per_hour"]), color=HONEY),
             stat_box("Honey / day", fmt(r["honey_per_day"])),
+            stat_box("Converted in the field", f"{fmt(r['field_converted_per_sec'])}/s",
+                     "Diamond Drain, Star Shower, Coin Scatter, Petal Storm"),
             stat_box("Pollen / sec (total)", fmt(r["gross_pollen_per_sec"]),
                      f"bees {fmt(r['bee_pollen_per_sec'])} · tool {fmt(r['tool_pollen_per_sec'])}"
                      + (f" · abilities {fmt(r['ability_pollen_per_sec'])}" if r["ability_pollen_per_sec"] else "")
@@ -1191,7 +1342,7 @@ class App:
             ft.DataCell(ft.Row([bee_face(b["type"], 26, b["gifted"]), ft.Text(b["type"])], spacing=8)),
             ft.DataCell(ft.Text(str(b["level"]))),
             ft.DataCell(ft.Row([img("beequip", b["beequip"], 22), ft.Text(b["beequip"])], spacing=6) if b["beequip"]
-                        else ft.Text("-")), ft.DataCell(ft.Text(fmt(b["gather"]))),
+                        else ft.Text("-")), ft.DataCell(ft.Text(fmt(b["gather"]))), ft.DataCell(ft.Text(fmt(b["attack"]))),
             ft.DataCell(ft.Text(f"{b['uptime']:.0%}")), ft.DataCell(ft.Text(fmt(b["pollen_per_sec"]))),
             ft.DataCell(ft.Text(fmt(b["convert_per_sec"])))]) for b in sorted(r["bees"], key=lambda x: -x["pollen_per_sec"])]
 
@@ -1200,6 +1351,7 @@ class App:
             ft.Text(f"Gathering in {self.s['field']} with a {self.s['tool']}", size=13),
             boxes,
             card("Pollen by flower colour", colour_bar),
+            self._honey_card(r),
             self._abilities_card(r),
             flowers_card,
             *([alts_card] if alts_card else []),
@@ -1210,10 +1362,35 @@ class App:
                     rows=stat_rows, data_row_min_height=28, data_row_max_height=32))),
                 ft.Container(col={"xs": 12, "lg": 7}, content=card("Per bee", ft.DataTable(
                     columns=[ft.DataColumn(ft.Text(c), numeric=c not in ("Bee", "Beequip")) for c in
-                             ("Bee", "Lvl", "Beequip", "Gather", "Awake", "Pollen/s", "Converts/s")],
+                             ("Bee", "Lvl", "Beequip", "Gather", "Attack", "Awake", "Pollen/s", "Converts/s")],
                     rows=bee_rows, data_row_min_height=28, data_row_max_height=32) if bee_rows else ft.Text("No bees."))),
             ]),
         ])
+
+    def _honey_card(self, r):
+        """Balloons, Shimmering Honey, passives and attack."""
+        lines = []
+        if r["balloons_alive"]:
+            lines.append(ft.Text(
+                f"Balloons: about {r['balloons_alive']:.1f} out at once, covering {r['balloon_cover']:.0%} of your area. "
+                f"They catch {fmt(r['balloon_pollen_per_sec'])} pollen/s, which is {fmt(r['balloon_per_trip'])} per trip "
+                "to the hive. Buoyant Bees convert it x3.", size=12))
+        bb = self.s["settings"].get("balloon_blessing", 0)
+        lines.append(ft.Text(f"Balloon Blessing: x{bb:.0f}" + (f" (x{1 + 0.03 * bb:.2f} Capacity, x{1 + 0.015 * bb:.2f} Honey at Hive)"
+                                                              if bb else ". Set your stacks under Field & Settings."),
+                             size=12, color=MUTED if not bb else None))
+        if r["shimmering"] > 1:
+            lines.append(ft.Text(f"Shimmering Honey (Diamond Bees): x{r['shimmering']:.2f} honey from hive conversion.", size=12))
+        pop = r["pop_star"]
+        if pop["bloat"] > 1 or pop["blue_pollen"] > 1:
+            lines.append(ft.Text(f"Pop Star: x{pop['blue_pollen']:.2f} Blue Pollen on average, Bubble Bloat x{pop['bloat']:.2f} "
+                                 "(Blue Field Capacity and Convert Rate at Hive).", size=12))
+        for name, d in r["passives"].items():
+            extra = f", converts {fmt(d['pollen_per_sec'])} pollen/s from your bag" if d["pollen_per_sec"] else ""
+            lines.append(ft.Text(f"{name}: {d['per_min']:.2f} activations/min{extra}", size=12))
+        lines.append(ft.Text(f"Attack total: {fmt(r['attack_total'])} · Convert total: {fmt(r['convert_total'])}",
+                             size=12, color=MUTED))
+        return card("Honey extras: balloons, passives & attack", *lines)
 
     def _abilities_card(self, r):
         b = r["buffs"]
@@ -1320,6 +1497,67 @@ class App:
             ft.Text("Tip: duplicate a setup (copy icon at the top), make your change, then compare the two here.", size=12),
             ft.Row([a_dd, ft.Icon(ft.Icons.ARROW_FORWARD), b_dd]), out])
 
+    # ------------------------------------------------------------ GUIDE
+    def guide_view(self):
+        from .guide import COMPS, SECTIONS, SOURCE
+
+        def visuals(items, cat):
+            if not items:
+                return None
+            if cat == "face":
+                return ft.Row([ft.Column([bee_face(b, 34), ft.Text(f"×{n}" if n > 1 else b, size=10, color=MUTED)],
+                                         spacing=2, horizontal_alignment=ft.CrossAxisAlignment.CENTER, tight=True)
+                               for b, n in items], wrap=True, spacing=8)
+            return ft.Row([ft.Column([img(cat, name, 44), ft.Text(name, size=10, color=MUTED)], spacing=2, tight=True,
+                                     horizontal_alignment=ft.CrossAxisAlignment.CENTER) for name in items],
+                          wrap=True, spacing=10)
+
+        def load_comp(name):
+            def go(e):
+                c = new_setup(f"Guide: {name}")
+                c["field"], c["tool"] = "Pine Tree Forest", self.s.get("tool", "Scooper")
+                c["gear"] = dict(self.s.get("gear", {}))
+                c["amulets"] = copy.deepcopy(self.s.get("amulets", {}))
+                c["badges"] = dict(self.s.get("badges", {}))
+                c["settings"] = dict(self.s["settings"])
+                lvl = max((b["level"] for b in self.s["bees"]), default=15)
+                slot = 0
+                for bee, n in COMPS[name]:
+                    for _ in range(n):
+                        b = new_bee(bee, lvl, True)
+                        b["slot"] = slot
+                        slot += 1
+                        c["bees"].append(b)
+                self.setups.append(c)
+                self.cur = len(self.setups) - 1
+                self.sel = None
+                self._persist()
+                self._refresh_setup_dd()
+                self._show(0)
+                self._toast(f"Loaded the {name} comp as a new setup, using your gear, amulets and badges. "
+                            "Compare it with your own setup on the Compare page.")
+            return go
+
+        blocks = [
+            ft.Text("Blue Hive Guide", size=24, weight=ft.FontWeight.BOLD),
+            ft.Text(SOURCE, size=12, color=MUTED),
+            card("Try a guide comp",
+                 ft.Text("Load one of the guide's hive comps as a new setup (gifted, at your hive's level) and compare "
+                         "it with yours.", size=12, color=MUTED),
+                 ft.Row([ft.OutlinedButton(content=n, icon=ft.Icons.HIVE, on_click=load_comp(n)) for n in COMPS], wrap=True)),
+        ]
+        for title, rows in SECTIONS:
+            items = []
+            for name, text, vis, cat in rows:
+                v = visuals(vis, cat)
+                items.append(ft.Container(
+                    padding=ft.Padding.symmetric(vertical=8), border=ft.Border.only(top=ft.BorderSide(1, LINE)),
+                    content=ft.Column([ft.Text(name, weight=ft.FontWeight.BOLD, size=13),
+                                       ft.Text(text, size=12, color=MUTED, selectable=True), *([v] if v else [])],
+                                      spacing=6, tight=True)))
+            blocks.append(card(title, *items))
+        return ft.ListView(expand=True, spacing=12, controls=blocks)
+
     # ------------------------------------------------------------ ABOUT
     def about_view(self):
         md = f"""
@@ -1327,7 +1565,7 @@ class App:
 
 All game numbers come from the Bee Swarm Simulator wiki ({GAME['source']}). Beequip and amulet values come from its copy of the game files.
 
-**Bees.** Each bee gathers `base gather × flower tier × (1 + 10% per level above 1) × 1.5 if gifted`. Flower tier is single ×1, double ×2, triple ×3, large ×4 and star ×5, so a Basic Bee collects 10/20/30/40/50. A crit doubles a gather. Red and blue bees get **+50% on flowers of their own colour**.
+**Bees.** Each bee gathers `base gather × flower tier × (1 + 5% per level above 1) × 1.5 if gifted`. Flower tier is single ×1, double ×2, triple ×3, large ×4 and star ×5, so a Basic Bee collects 10/20/30/40/50. A crit doubles a gather. Red and blue bees get **+50% on flowers of their own colour**.
 A trip takes the bee's gather time plus flight time, and flight time depends on movespeed (`+3% per level`).
 Energy is `base × (1 + 5% per level)`. When it runs out, the bee flies home at half speed, sleeps 30 s (Shocked Bee 15 s) and flies back at 1.5× speed.
 
@@ -1356,6 +1594,26 @@ Beamstorm, Scratch, Triangulate, Mark Surge, Target Practice, Fuzz Bombs and Inf
 Bomb Combo gives x1.25 Bomb Power per stack (up to x3.5). Baby Love gives x2, Bear Morph x2 (Mother x2.5), Pollen Mark x1.5 per linked mark (up to x2.5), and Melody +100% crit power.
 Stacking buffs average E[min(stacks, cap)], where the number of stacks is Poisson-distributed from the token rate × duration. One-off buffs count for the share of time they're active.
 
+**Balloons.** Each Buoyant Bee spawns Inflate Balloons about every 52 s. A blue balloon lasts 20 s + 2 s per level and holds your capacity ÷ 6 (gold balloons from gifted Buoyants hold ×1.25).
+Pollen collected under a balloon's 5-tile shadow goes into the balloon (+10%, or +20% on blue flowers) instead of your bag. Each Inflate Balloons token also adds +5% to every balloon, up to 10 times.
+Balloons are converted at the hive after your bag, and Buoyant Bees convert balloon pollen ×3 (Balloon Enthusiast).
+**Balloon Blessing** gives ×1.03 Capacity and ×1.015 Honey at Hive per stack, up to ×4 and ×2.5 at 100. Set your stacks under Field & Settings.
+
+**Honey at Hive.** Hive conversions are multiplied by Honey Per Pollen and Honey at Hive (Dandelion badge, Satisfying nectar, Elf Cap, Candy Ring, Balloon Blessing).
+Diamond Bees add **Shimmering Honey**: +25% honey (+2.5% per level, doubled if gifted), weighted by how much of the converting they do.
+
+**Passives.** Diamond Drain (every 30th blue token, 45 s cooldown) converts 5M + your Convert Total (+10% per blue bee, +50% per gifted blue type).
+Star Shower (every 40th Boost or Mark token, 30 s cooldown) drops 10 stars, each converting 1M + 200% of your Convert Total.
+Coin Scatter, Petal Storm and Bubble Bombs use their wiki trigger counts and amounts.
+Pop Star gives ×2 Blue Pollen (+1% per bubble you pop, up to ×4.5) and +10% Instant Blue Conversion for 45 s. Its Bubble Bloat gives up to ×6 Blue Field Capacity and Convert Rate at Hive.
+Star Amulet passives also add their permanent ×1.25 capacity bonuses.
+
+**Badges, nectars & items.** Badges use their wiki tier rewards. Nectars scale between their wiki minimum and maximum. Item presets (Super Smoothie, Purple Potion, Field Boost…) use the wiki buff values.
+
+**System Page overrides.** Any total you type in from your in-game System Page replaces the calculated value. That covers everything the app can't see, like the sticker stack and Robo upgrades.
+
+**Attack.** (base + Bee Attack + colour attack) × Attack Multiplier × 1.5 if gifted. Buoyant attack scales up to ×3 with Balloon Blessing.
+
 **Bubbles.** A popped bubble collects 4 red / 6 white / 8 blue pollen from 29 flowers (+15% per gifted blue bee type, +5% per bee level), times flower tier and your Bubble Pollen.
 Tadpole Bees make one on 65% of gathers (85% gifted) and Bubble Bees on 25% (50%). Frogs from Summon Frog (1 token per 80 s per Tadpole) make 3 bubbles each.
 
@@ -1366,7 +1624,7 @@ Tokens are client-side, so an alt's Baby Love, Inspire and so on only buff the a
 Token rates use the wiki's spawn data (cooldowns and success rate, adjusted by Bee Ability Rate) times how many tokens the macro picks up.
 Not modelled: alts taking pollen from the same flowers.
 
-**Honey loop.** Pollen fills your bag, minus whatever is instantly converted (colour instant conversion first, then regular).
+**Honey loop.** Pollen fills your bag, minus whatever is instantly converted (colour instant conversion first, then regular) and whatever balloons catch. You head back when the bag is full or after your gather time (14 min by default).
 When the bag is full you walk to the hive and your bees convert it. Each bee converts
 `(base convert + Convert Amount) × (1 + 10% per level) × Convert Rate × Convert Rate At Hive × 1.5 if gifted`.
 Honey/hr = honey per loop ÷ loop time.

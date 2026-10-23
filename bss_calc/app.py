@@ -588,6 +588,7 @@ class App:
                     ft.FilledButton(content="Fill empty slots", icon=ft.Icons.FORMAT_COLOR_FILL, on_click=self._fill_hive),
                     ft.OutlinedButton(content="Set every bee to this level", on_click=self._all_levels),
                     ft.TextButton(content="Clear hive", icon=ft.Icons.DELETE_SWEEP, on_click=self._clear_hive),
+                    ft.TextButton(content="Template hives", icon=ft.Icons.MENU_BOOK, on_click=lambda e: self._show(3)),
                 ], wrap=True),
             ]
             return
@@ -1499,7 +1500,8 @@ class App:
 
     # ------------------------------------------------------------ GUIDE
     def guide_view(self):
-        from .guide import COMPS, SECTIONS, SOURCE
+        from .guide import SECTIONS, SOURCE
+        from .templates import RED_EARLY_NOTE, TEMPLATES, build_setup
 
         def visuals(items, cat):
             if not items:
@@ -1512,39 +1514,83 @@ class App:
                                      horizontal_alignment=ft.CrossAxisAlignment.CENTER) for name in items],
                           wrap=True, spacing=10)
 
-        def load_comp(name):
+        if not hasattr(self, "template_color"):
+            self.template_color = "blue"
+        templates_col = ft.Column(spacing=10)
+
+        def load_template(t):
             def go(e):
-                c = new_setup(f"Guide: {name}")
-                c["field"], c["tool"] = "Pine Tree Forest", self.s.get("tool", "Scooper")
-                c["gear"] = dict(self.s.get("gear", {}))
-                c["amulets"] = copy.deepcopy(self.s.get("amulets", {}))
-                c["badges"] = dict(self.s.get("badges", {}))
-                c["settings"] = dict(self.s["settings"])
-                lvl = max((b["level"] for b in self.s["bees"]), default=15)
-                slot = 0
-                for bee, n in COMPS[name]:
-                    for _ in range(n):
-                        b = new_bee(bee, lvl, True)
-                        b["slot"] = slot
-                        slot += 1
-                        c["bees"].append(b)
+                c = build_setup(t, new_setup, new_bee, beequip_rows, beequip_allowed, base=self.s)
                 self.setups.append(c)
                 self.cur = len(self.setups) - 1
                 self.sel = None
                 self._persist()
                 self._refresh_setup_dd()
                 self._show(0)
-                self._toast(f"Loaded the {name} comp as a new setup, using your gear, amulets and badges. "
-                            "Compare it with your own setup on the Compare page.")
+                self._toast(f"Loaded \"{t['name']}\" at level {t['level']} as a new setup, with your gear, amulets "
+                            "and badges. Compare it with your own setup on the Compare page.")
             return go
 
+        def render_templates(update=True):
+            chosen = [t for t in TEMPLATES if t["color"] == self.template_color]
+            cards = []
+            if self.template_color == "red":
+                cards.append(ft.Text(RED_EARLY_NOTE, size=12, color=GIFTED))
+            for t in chosen:
+                src, url = t["source"]
+                bq = ft.Row([ft.Column([img("beequip", item, 30), ft.Text(f"{item} → {bee}", size=9, color=MUTED)],
+                                       spacing=1, tight=True, horizontal_alignment=ft.CrossAxisAlignment.CENTER)
+                             for item, bee in t["beequips"]], wrap=True, spacing=8) if t["beequips"] else None
+                gifted = ("fully gifted" if t["gifted"] == "all" else
+                          ", ".join(f"{n} gifted {b}" for b, n in t["gifted"].items()) if t["gifted"] else "not gifted")
+                cards.append(ft.Container(
+                    padding=12, border_radius=12, bgcolor=CARD, border=ft.Border.all(1, LINE),
+                    content=ft.Column([
+                        ft.Row([ft.Text(t["name"], size=15, weight=ft.FontWeight.BOLD), ft.Container(expand=True),
+                                ft.FilledButton(content="Load as new setup", icon=ft.Icons.DOWNLOAD,
+                                                on_click=load_template(t))]),
+                        ft.Text(f"{t['levels']} · {sum(n for _, n in t['bees'])} bees · {gifted} · "
+                                f"loads at level {t['level']}", size=12),
+                        visuals(t["bees"], "face"),
+                        *([bq] if bq else []),
+                        ft.Text(t["notes"], size=12, color=MUTED),
+                        ft.Row([ft.Text("Source:", size=11, color=MUTED),
+                                ft.TextButton(content=src, url=url) if url else ft.Text(src, size=11)], spacing=4),
+                    ], spacing=8, tight=True)))
+            templates_col.controls = cards
+            if update:
+                templates_col.update()
+
+        def set_color(color):
+            def go(e):
+                self.template_color = color
+                for btn, c in toggles:
+                    btn.bgcolor = RAISED if c == color else None
+                    btn.update()
+                render_templates()
+            return go
+
+        toggles = []
+        for color, label_ in (("blue", "Blue hive"), ("red", "Red hive")):
+            btn = ft.Container(padding=ft.Padding.symmetric(horizontal=14, vertical=6), border_radius=16, ink=True,
+                               border=ft.Border.all(1, LINE), bgcolor=RAISED if color == self.template_color else None,
+                               on_click=set_color(color),
+                               content=ft.Row([ft.Container(width=10, height=10, border_radius=5,
+                                                            bgcolor="#5AB4E0" if color == "blue" else "#E06C6C"),
+                                               ft.Text(label_)], spacing=6, tight=True))
+            toggles.append((btn, color))
+        render_templates(update=False)
+
         blocks = [
-            ft.Text("Blue Hive Guide", size=24, weight=ft.FontWeight.BOLD),
+            ft.Text("Guides & template hives", size=24, weight=ft.FontWeight.BOLD),
+            card("Template hives",
+                 ft.Text("Hive comps taken straight from published guides, from early game to endgame. Loading one makes "
+                         "a new setup at the template's level, with the guide's beequips and your gear, amulets and badges.",
+                         size=12, color=MUTED),
+                 ft.Row([b for b, _ in toggles], spacing=8),
+                 templates_col),
+            ft.Text("Blue Hive Guide", size=20, weight=ft.FontWeight.BOLD),
             ft.Text(SOURCE, size=12, color=MUTED),
-            card("Try a guide comp",
-                 ft.Text("Load one of the guide's hive comps as a new setup (gifted, at your hive's level) and compare "
-                         "it with yours.", size=12, color=MUTED),
-                 ft.Row([ft.OutlinedButton(content=n, icon=ft.Icons.HIVE, on_click=load_comp(n)) for n in COMPS], wrap=True)),
         ]
         for title, rows in SECTIONS:
             items = []

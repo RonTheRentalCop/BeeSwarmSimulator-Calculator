@@ -130,18 +130,3 @@ SECTIONS = [
          "14 Buoyants → the remaining Tadpoles and Buoyants.", [("Buoyant", 1), ("Fuzzy", 1), ("Tadpole", 1)], "face"),
     ]),
 ]
-
-# hive comps the Guide page can load straight into a new setup
-COMPS = {
-    "Stage 2 — Most progressed": [("Buoyant", 14), ("Tadpole", 10), ("Diamond", 5), ("Music", 4), ("Bear", 1),
-                                  ("Baby", 2), ("Fuzzy", 1), ("Exhausted", 1), ("Stubborn", 1), ("Looker", 1),
-                                  ("Commander", 1), ("Puppy", 1), ("Ninja", 1), ("Bubble", 1), ("Cool", 1), ("Basic", 1),
-                                  ("Gummy", 1), ("Vicious", 1), ("Windy", 1), ("Tabby", 1)],
-    "Stage 3 — Semi-Diamond": [("Buoyant", 17), ("Tadpole", 9), ("Diamond", 6), ("Music", 4), ("Bear", 1), ("Fuzzy", 1),
-                               ("Exhausted", 1), ("Stubborn", 1), ("Looker", 1), ("Commander", 1), ("Puppy", 1),
-                               ("Ninja", 1), ("Bubble", 1), ("Cool", 1), ("Basic", 1), ("Gummy", 1), ("Windy", 1),
-                               ("Tabby", 1)],
-    "Stage 4 — Endgame": [("Buoyant", 16), ("Tadpole", 7), ("Diamond", 10), ("Music", 4), ("Bear", 1), ("Exhausted", 1),
-                          ("Stubborn", 1), ("Looker", 1), ("Puppy", 1), ("Ninja", 1), ("Bubble", 1), ("Cool", 1),
-                          ("Basic", 1), ("Gummy", 1), ("Digital", 1), ("Tabby", 1), ("Festive", 1)],
-}

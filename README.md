@@ -31,7 +31,7 @@ The first launch downloads Flet's desktop client, which takes a moment.
   - Shows honey/hr, honey/day, pollen/s from bees and from your tool, capacity, bag fill and convert times, and instant conversion.
   - Shows your stat totals, so you can check them against your in-game System Page, and a per-bee breakdown.
   - **"Where your next gains come from"** ranks how much honey/hr each stat bump would add.
-- **Guide:** a blue hive guide (based on Anthrax's guide) covering comps, progression, beequips, amulets, mutations and gifting, with bee faces and item pictures. You can load a guide comp as a new setup.
+- **Guide & template hives:** blue and red template hives taken only from published guides. Blue covers Anthrax's stages 1-4 (by level) plus Meta Bee's Standard and Diamond hives; red is Meta Bee's endgame hive (credible red guides only publish level 20+ hives). Load any template as a new setup with the guide's beequips. Below the templates is a blue hive guide covering comps, progression, beequips, amulets, mutations and gifting.
 - **Compare:** duplicate a setup (copy icon at the top), change something, and see the honey/hr difference stat by stat.
 
 Setups save automatically: in your browser on the website, and in the app's own storage on desktop.

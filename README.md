@@ -70,7 +70,7 @@ The **How it works** page in the app explains the full model. In short:
 - **Stats:** each stat is `(100% + every "+%") × every "x"`. Gifted hive bonuses count once per bee type.
 - **Honey loop:** you gather until the bag is full (less any instant conversion), walk to the hive, and your bees convert the bag.
 
-**Not simulated:** Pulse, Tornado, Rain Cloud, Glob and goo, flames, Coconut Combo, Tide Popper waves, mobs, planters, and alts taking pollen from the same flowers. Use the Buffs & Items tab or System Page overrides for these. Add them as buffs, or use the *Ability token pollen* setting.
+**Not simulated:** Pulse, Tornado, Rain Cloud, Glob and goo, flames, Coconut Combo, Tide Popper waves, mobs, planters, and alts taking pollen from the same flowers. Use the Buffs & Items tab or System Page overrides for these.
 
 **Assumptions you can change:**
 - Base crit chance 5%.

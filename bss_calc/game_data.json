@@ -33,7 +33,13 @@
    "convert_time": 4.0,
    "tokens": "Buzz Bomb",
    "gifted_bonus_text": "\u00d71.1 Bomb Pollen",
-   "gifted_effects": []
+   "gifted_effects": [
+    [
+     "bomb_pollen",
+     "mul",
+     1.1
+    ]
+   ]
   },
   "Brave": {
    "rarity": "Rare",
@@ -161,7 +167,13 @@
    "convert_time": 4.0,
    "tokens": "Red Bomb",
    "gifted_bonus_text": "\u00d71.25 Red Bomb Pollen",
-   "gifted_effects": []
+   "gifted_effects": [
+    [
+     "red_bomb_pollen",
+     "mul",
+     1.25
+    ]
+   ]
   },
   "Stubborn": {
    "rarity": "Rare",
@@ -249,7 +261,13 @@
    "convert_time": 4.0,
    "tokens": "Buzz Bomb+",
    "gifted_bonus_text": "\u00d71.25 Buzz Bomb Pollen",
-   "gifted_effects": []
+   "gifted_effects": [
+    [
+     "buzz_bomb_pollen",
+     "mul",
+     1.25
+    ]
+   ]
   },
   "Exhausted": {
    "rarity": "Epic",
@@ -297,7 +315,13 @@
    "convert_time": 4.0,
    "tokens": "Blue Bomb+, Blue Boost",
    "gifted_bonus_text": "\u00d71.25 Blue Bomb Pollen",
-   "gifted_effects": []
+   "gifted_effects": [
+    [
+     "blue_bomb_pollen",
+     "mul",
+     1.25
+    ]
+   ]
   },
   "Honey": {
    "rarity": "Epic",
@@ -311,7 +335,13 @@
    "convert_time": 2.0,
    "tokens": "Honey Gift, Honey Mark",
    "gifted_bonus_text": "\u00d71.5 Honey From Tokens",
-   "gifted_effects": []
+   "gifted_effects": [
+    [
+     "honey_from_tokens",
+     "mul",
+     1.5
+    ]
+   ]
   },
   "Rage": {
    "rarity": "Epic",
@@ -414,7 +444,13 @@
    "convert_time": 4.0,
    "tokens": "Red Bomb, Red Bomb+; passive Gathering Flames+",
    "gifted_bonus_text": "+20% Instant Bomb Conversion",
-   "gifted_effects": []
+   "gifted_effects": [
+    [
+     "instant_bomb_conversion",
+     "add",
+     0.2
+    ]
+   ]
   },
   "Diamond": {
    "rarity": "Legendary",
@@ -508,7 +544,13 @@
    "convert_time": 4.0,
    "tokens": "Red Bomb, Red Boost; passive Nectar Lover",
    "gifted_bonus_text": "+5% Bee Ability Pollen",
-   "gifted_effects": []
+   "gifted_effects": [
+    [
+     "bee_ability_pollen",
+     "add",
+     0.05
+    ]
+   ]
   },
   "Buoyant": {
    "rarity": "Mythic",
@@ -542,7 +584,13 @@
    "convert_time": 6.0,
    "tokens": "Buzz Bomb+, Fuzz Bombs, **Pollen Haze (gifted)**; passive Fuzzy Coat",
    "gifted_bonus_text": "\u00d71.1 Bomb Power",
-   "gifted_effects": []
+   "gifted_effects": [
+    [
+     "bomb_power",
+     "mul",
+     1.1
+    ]
+   ]
   },
   "Precise": {
    "rarity": "Mythic",
@@ -604,7 +652,13 @@
    "convert_time": 2.72,
    "tokens": "Pollen Mark+, Triangulate, **Mark Surge (gifted)**",
    "gifted_bonus_text": "+15% Mark Duration",
-   "gifted_effects": []
+   "gifted_effects": [
+    [
+     "mark_duration",
+     "add",
+     0.15
+    ]
+   ]
   },
   "Bear": {
    "rarity": "Event",
@@ -1136,6 +1190,11 @@
       1.25
      ],
      [
+      "honey_from_tokens",
+      "add",
+      0.5
+     ],
+     [
       "convert_amount",
       "add",
       80.0
@@ -1147,7 +1206,6 @@
      ]
     ],
     "notes": [
-     "+50% Honey From Tokens",
      "+30% Defense",
      "Passive: Coin Scatter"
     ]
@@ -1349,10 +1407,14 @@
       "convert_amount",
       "add",
       25.0
+     ],
+     [
+      "honey_from_tokens",
+      "add",
+      0.5
      ]
     ],
     "notes": [
-     "+50% Honey From Tokens",
      "+1 Blue Bee Attack"
     ]
    },
@@ -1378,10 +1440,14 @@
       "convert_rate",
       "add",
       0.5
+     ],
+     [
+      "honey_from_tokens",
+      "add",
+      0.5
      ]
     ],
     "notes": [
-     "+50% Honey From Tokens",
      "+1 Bee Attack"
     ]
    }
@@ -1399,11 +1465,14 @@
       "white_pollen",
       "add",
       0.05
+     ],
+     [
+      "bomb_pollen",
+      "add",
+      0.15
      ]
     ],
-    "notes": [
-     "+15% Bomb Pollen"
-    ]
+    "notes": []
    },
    "Looker Guard": {
     "cost": "300,000 Honey and 25 Sunflower Seeds.",
@@ -1507,13 +1576,17 @@
       0.5
      ],
      [
+      "red_bomb_pollen",
+      "add",
+      0.2
+     ],
+     [
       "crit_chance",
       "add",
       0.1
      ]
     ],
     "notes": [
-     "+20% Red Bomb Pollen",
      "+3 Red Bee Attack",
      "+10% Defense",
      "Passive: Focus Pulser"
@@ -1620,12 +1693,16 @@
       "crit_power",
       "add",
       0.75
+     ],
+     [
+      "blue_bomb_pollen",
+      "add",
+      0.1
      ]
     ],
     "notes": [
      "+10% Defense",
-     "+2 Blue Bee Attack",
-     "+10% Blue Bomb Pollen"
+     "+2 Blue Bee Attack"
     ]
    },
    "Cobalt Guard": {
@@ -1642,13 +1719,17 @@
       0.5
      ],
      [
+      "blue_bomb_pollen",
+      "add",
+      0.2
+     ],
+     [
       "crit_power",
       "add",
       1.0
      ]
     ],
     "notes": [
-     "+20% Blue Bomb Pollen",
      "+3 Blue Bee Attack",
      "+10% Defense",
      "Passive: Haste Pulser"
@@ -1727,12 +1808,20 @@
       "convert_amount",
       "add",
       75.0
+     ],
+     [
+      "buzz_bomb_pollen",
+      "add",
+      0.2
+     ],
+     [
+      "honey_from_tokens",
+      "add",
+      0.5
      ]
     ],
     "notes": [
      "+100% Loot Luck",
-     "+20% Buzz Bomb Pollen",
-     "+50% Honey From Tokens",
      "+1 Colorless Bee Attack"
     ]
    },
@@ -1753,12 +1842,20 @@
       "convert_amount",
       "add",
       100.0
+     ],
+     [
+      "honey_from_tokens",
+      "add",
+      0.75
+     ],
+     [
+      "buzz_bomb_pollen",
+      "add",
+      0.3
      ]
     ],
     "notes": [
      "+101% Loot Luck",
-     "+75% Honey From Tokens",
-     "+30% Buzz Bomb Pollen",
      "+1 Colorless Bee Attack",
      "Passive: Petal Storm"
     ]
@@ -1782,6 +1879,11 @@
       120.0
      ],
      [
+      "honey_from_tokens",
+      "add",
+      1.0
+     ],
+     [
       "field_pollen:Coconut Field",
       "mul",
       1.1
@@ -1794,7 +1896,6 @@
     ],
     "notes": [
      "+102% Loot Luck",
-     "+100% Honey From Tokens",
      "+1 Bee Attack",
      "Passive: Petal Storm (Needs Petal Belt)",
      "Passive: Combo Coconuts"
@@ -1875,6 +1976,11 @@
       1.15
      ],
      [
+      "honey_from_tokens",
+      "add",
+      0.25
+     ],
+     [
       "player_movespeed_flat",
       "add",
       7.0
@@ -1886,7 +1992,6 @@
      ]
     ],
     "notes": [
-     "+25% Honey From Tokens",
      "+2 Bee Attack",
      "+22 Jump Power",
      "Passive: Coconut Haste"
@@ -1901,6 +2006,11 @@
       0.2
      ],
      [
+      "honey_from_tokens",
+      "add",
+      0.5
+     ],
+     [
       "player_movespeed_flat",
       "add",
       9.0
@@ -1913,7 +2023,6 @@
     ],
     "notes": [
      "+25% Goo",
-     "+50% Honey From Tokens",
      "+3 Bee Attack",
      "+22 Jump Power",
      "Passive: Coconut Haste",

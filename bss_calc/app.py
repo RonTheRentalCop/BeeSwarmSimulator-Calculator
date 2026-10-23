@@ -9,6 +9,7 @@ import flet as ft
 
 from . import storage
 from .data import GAME
+from .abilities import NOT_MODELLED
 from .engine import GEAR_SLOTS, alt_impact, compute, new_alt, new_bee, new_setup, sensitivity, token_interval
 from .stats import (AMULET_GROUPS, BEE_KEYS, HIVE_KEYS, amulet_pool, amulet_rows, beequip_allowed, beequip_possible,
                     beequip_rows, describe, from_display, kind, label, to_display)
@@ -43,8 +44,14 @@ SETTING_INFO = [
     ("hive_distance_studs", "Field to hive distance (studs)", "flat", "Used for bees going home to sleep and for you walking to convert."),
     ("player_speed", "Your walk speed (studs/s)", "flat", "Base movespeed plus boots, Haste and so on."),
     ("tool_uptime", "Tool uptime (0 to 1)", "flat", "How much of your field time you spend swinging the tool."),
-    ("ability_pollen_pct", "Ability token pollen (% of bee gathering)", "flat",
-     "Tokens and passives aren't simulated. Add your best guess of their share here."),
+    ("ability_pollen_pct", "Extra ability pollen %", "flat",
+     "Most ability tokens are now simulated. Use this only for things that aren't (passives, Pulse, Tornado...)."),
+    ("fuzz_bomb_catch_pct", "Fuzz bombs you catch %", "flat", "Share of Fuzzy Bee fuzz bombs you run into."),
+    ("mark_stand_pct", "Time standing in Pollen Marks %", "flat",
+     "How much of the time you're inside your active Pollen Marks (x1.5 per linked mark, up to x2.5)."),
+    ("triangle_flowers", "Flowers in a Triangulate triangle", "flat", "Average flowers inside Vector Bee's triangle."),
+    ("targets_hit", "Target Practice targets hit (0-3)", "flat", "Precise Bee targets you walk over."),
+    ("tabby_love_stacks", "Tabby Love stacks", "flat", "Your Tabby Love stacks (0-1000): +1% Tabby Scratch pollen each."),
     ("sleep_time", "Bee sleep time (s)", "flat", "Time a bee rests in the hive after running out of energy."),
     ("gather_area_flowers", "Gathering area (flowers)", "flat",
      "Flowers around you that your bees and tool work. Pollination is spread over these."),
@@ -1139,6 +1146,7 @@ class App:
             stat_box("Honey / day", fmt(r["honey_per_day"])),
             stat_box("Pollen / sec (total)", fmt(r["gross_pollen_per_sec"]),
                      f"bees {fmt(r['bee_pollen_per_sec'])} · tool {fmt(r['tool_pollen_per_sec'])}"
+                     + (f" · abilities {fmt(r['ability_pollen_per_sec'])}" if r["ability_pollen_per_sec"] else "")
                      + (f" · bubbles {fmt(r['bubble_pollen_per_sec'])}" if r["bubble_pollen_per_sec"] else "")),
             stat_box("Capacity", fmt(r["capacity"]), f"fills in {fmt_time(r['fill_time'])}"),
             stat_box("Convert time", fmt_time(r["convert_time"]), f"hive converts {fmt(r['hive_convert_per_sec'])}/s"),
@@ -1192,6 +1200,7 @@ class App:
             ft.Text(f"Gathering in {self.s['field']} with a {self.s['tool']}", size=13),
             boxes,
             card("Pollen by flower colour", colour_bar),
+            self._abilities_card(r),
             flowers_card,
             *([alts_card] if alts_card else []),
             card("Where your next gains come from (honey/hr from each change)", *sens_rows),
@@ -1205,6 +1214,48 @@ class App:
                     rows=bee_rows, data_row_min_height=28, data_row_max_height=32) if bee_rows else ft.Text("No bees."))),
             ]),
         ])
+
+    def _abilities_card(self, r):
+        b = r["buffs"]
+
+        def chip(name, value, sub=None):
+            return ft.Container(padding=ft.Padding.symmetric(horizontal=10, vertical=6), border_radius=10, bgcolor=CARD,
+                                border=ft.Border.all(1, LINE), content=ft.Column([
+                                    ft.Text(name, size=11, color=MUTED), ft.Text(value, size=15, weight=ft.FontWeight.BOLD),
+                                    *([ft.Text(sub, size=10, color=MUTED)] if sub else [])], spacing=1, tight=True))
+
+        boosts = b["boost"]
+        chips = [
+            chip("All buffs on Pollen", f"x{b['pollen']:.2f}", "average, multiplied together"),
+            chip("Inspire", f"x{b['inspire']:.2f}", "gifted bees, up to x51"),
+            chip("Baby Love", f"x{b['baby_love']:.2f}", "x2 while active"),
+            chip("Bear Morph", f"x{b['bear_morph']:.2f}", "x2, Mother x2.5"),
+            chip("Pollen Mark", f"x{b['pollen_mark']:.2f}", "x1.5 per mark"),
+            chip("Boosts W / R / B", f"x{boosts['white']:.2f} / {boosts['red']:.2f} / {boosts['blue']:.2f}", "up to x3"),
+            chip("Focus", f"+{b['crit_chance'] * 100:.0f}% crit", "up to +30%"),
+            chip("Melody", f"+{b['crit_power'] * 100:.0f}% crit power", "+100% while active"),
+            chip("Bomb Combo", f"x{b['bomb_power']:.2f} bombs", "up to x3.5"),
+            chip("Haste", f"x{b['haste']:.2f} speed", "up to x2"),
+        ]
+        rows = []
+        for name, d in sorted(r["tokens"].items(), key=lambda kv: -(kv[1]["pollen"] + kv[1]["honey"] / 3600)):
+            what = (f"{fmt(d['pollen'])} pollen/s" if d["pollen"] else f"{fmt(d['honey'] * 3600)} honey/hr" if d["honey"]
+                    else "buff")
+            rows.append(ft.DataRow(cells=[ft.DataCell(ft.Text(name)), ft.DataCell(ft.Text(f"{d['rate'] * 60:.1f}")),
+                                          ft.DataCell(ft.Text(what))]))
+        table = ft.DataTable(columns=[ft.DataColumn(ft.Text("Ability")), ft.DataColumn(ft.Text("Tokens/min"), numeric=True),
+                                      ft.DataColumn(ft.Text("Adds"))], rows=rows,
+                             data_row_min_height=26, data_row_max_height=30) if rows else ft.Text(
+            "Your bees don't spawn any modelled abilities.", italic=True, size=12)
+        return card(
+            "Abilities & buffs (from your bees' ability tokens)",
+            ft.Text(f"Ability tokens add {fmt(r['ability_pollen_per_sec'])} pollen/s and "
+                    f"{fmt(r['token_honey_per_hour'])} honey/hr from honey tokens. Spawn rates and buff values come "
+                    "from the wiki, using your Bee Ability Rate and token pickup %.", size=12, color=MUTED),
+            ft.Row(chips, wrap=True, spacing=8, run_spacing=8),
+            table,
+            ft.Text("Not modelled yet: " + NOT_MODELLED + ".", size=11, color=MUTED, italic=True),
+        )
 
     # ------------------------------------------------------------ COMPARE
     def compare_view(self):
@@ -1228,6 +1279,8 @@ class App:
                 ("Convert time", "convert_time", fmt_time), ("Instantly converted", "instant_share", lambda v: f"{v:.1%}"),
                 ("Average flower tier", "flower_tier", lambda v: f"{v:.2f}"),
                 ("Bubble pollen / sec", "bubble_pollen_per_sec", fmt),
+                ("Ability pollen / sec", "ability_pollen_per_sec", fmt),
+                ("Honey from tokens / hr", "token_honey_per_hour", fmt),
                 ("Time in field", "field_time_share", lambda v: f"{v:.0%}"),
             ]
 
@@ -1295,6 +1348,14 @@ The app simulates your gathering area second by second to find the steady-state 
 
 Uptimes for the triggered ones are under Field & Settings.
 
+**Ability tokens.** Each bee spawns its abilities while it's gathering. The wiki's spawn formula is `use cooldown / r + attempt cooldown / r × (1 / (success × r) − 1)`, where r is Bee Ability Rate; a Bomb, for example, spawns about once every 20 s.
+Bombs collect 7 pollen (Buzz, every colour) or 10 pollen (Red/Blue, their colour only) from 13 flowers (29 for Bomb+), × level/10 × Bomb Power × Bomb Pollen.
+Beamstorm, Scratch, Triangulate, Mark Surge, Target Practice, Fuzz Bombs and Inferno's Fire Bees use their wiki amounts. Honey Gift gives 100 × level² (Gift+ 250 × level²), and Token Link gives 25 + 10 × level per linked token.
+
+**Buffs.** Boost gives x1.2 colour pollen per stack (up to x3, 15 s). Inspire gives x2 per stack (up to x51, 5 s). Focus gives +3% crit per stack (up to +30%).
+Bomb Combo gives x1.25 Bomb Power per stack (up to x3.5). Baby Love gives x2, Bear Morph x2 (Mother x2.5), Pollen Mark x1.5 per linked mark (up to x2.5), and Melody +100% crit power.
+Stacking buffs average E[min(stacks, cap)], where the number of stacks is Poisson-distributed from the token rate × duration. One-off buffs count for the share of time they're active.
+
 **Bubbles.** A popped bubble collects 4 red / 6 white / 8 blue pollen from 29 flowers (+15% per gifted blue bee type, +5% per bee level), times flower tier and your Bubble Pollen.
 Tadpole Bees make one on 65% of gathers (85% gifted) and Bubble Bees on 25% (50%). Frogs from Summon Frog (1 token per 80 s per Tadpole) make 3 bubbles each.
 
@@ -1310,8 +1371,8 @@ When the bag is full you walk to the hive and your bees convert it. Each bee con
 `(base convert + Convert Amount) × (1 + 10% per level) × Convert Rate × Convert Rate At Hive × 1.5 if gifted`.
 Honey/hr = honey per loop ÷ loop time.
 
-**Not simulated:** ability tokens (except their pollination), other passives, bombs, bubbles, flames, marks, mobs, boosts and planters.
-Add these on the **Buffs** tab, or use the *Ability token pollen* setting.
+**Not simulated:** passives (Pop Star, Scorching Star, Petal Storm...), Pulse, Tornado, balloons, flames, goo, mobs and planters.
+Add these on the **Buffs** tab, or use the *Extra ability pollen %* setting.
 If your game numbers differ (base crit chance, for example), change them under **Field & Settings**.
 
 Setups are saved automatically on this device (in your browser on the website).

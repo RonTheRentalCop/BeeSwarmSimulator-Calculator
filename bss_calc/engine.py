@@ -26,6 +26,7 @@ import functools
 import math
 import random
 
+from . import abilities
 from .data import GAME
 from .stats import COLORS, kind
 
@@ -44,6 +45,11 @@ DEFAULT_SETTINGS = {
     "token_pickup_pct": 100.0,     # share of your own ability tokens you collect
     "bubble_pop_pct": 50.0,        # share of bubbles in your area that you pop
     "fuzz_bomb_pollination": 0.0,  # flowers each fuzz bomb pollinates (wiki: "may pollinate", no number given)
+    "fuzz_bomb_catch_pct": 50.0,   # share of fuzz bombs you run into
+    "mark_stand_pct": 60.0,        # share of time you stand inside your Pollen Marks
+    "triangle_flowers": 30.0,      # flowers inside an average Vector Triangulate triangle
+    "targets_hit": 2.0,            # Precise Bee Target Practice targets you activate (0-3)
+    "tabby_love_stacks": 0.0,      # your Tabby Love stacks (0-1000)
     "guiding_star_uptime_pct": 0.0,  # % of time Guiding Star (Star Amulet passive) is active
     "diamond_drain_per_min": 0.0,  # Diamond Drain activations per minute (Diamond Mask)
 }
@@ -351,14 +357,21 @@ def compute(setup, include_alts=True):
     natural_tier = field["avg_size"]
     tier, tier_dist = pollinated_tiers(tuple(field["sizes"]), area, round(poll_rate, 3))
 
+    # ---------------- ability tokens & buffs ----------------
+    tokens = abilities.token_rates(setup["bees"], bee_rows, hive.get("bee_ability_rate"), s["token_pickup_pct"] / 100)
+    buff = abilities.buffs(tokens, hive, s)
+    pollen *= buff["pollen"]
+    color_pollen = {c: color_pollen[c] * buff["boost"][c] for c in COLORS}
+    bee_gather_pollen *= buff["bee_gather"]
+
     # ---------------- bees: pollen (pass 2) ----------------
     bee_pollen = {c: 0.0 for c in COLORS}          # gross pollen/s by flower colour
     bee_instant = {c: 0.0 for c in COLORS}         # pollen/s converted by super-crits / bee-only instant conversion
     for row in bee_rows:
         bs, base = row.pop("_bs"), row.pop("_base")
         gps = row.pop("_gps")
-        cf, sup_share = _crit_factor(hive.get("crit_chance") + bs.get("bee:crit_chance"),
-                                     hive.get("crit_power") + bs.get("bee:crit_power"),
+        cf, sup_share = _crit_factor(hive.get("crit_chance") + bs.get("bee:crit_chance") + buff["crit_chance"],
+                                     hive.get("crit_power") + bs.get("bee:crit_power") + buff["crit_power"],
                                      hive.get("super_crit_chance") + bs.get("bee:super_crit_chance"),
                                      hive.get("super_crit_power") + bs.get("bee:super_crit_power"))
         mult = (pollen * bee_gather_pollen * (gifted_pollen if row["gifted"] else 1.0) * cf * tier
@@ -370,6 +383,23 @@ def compute(setup, include_alts=True):
             bee_pollen[c] += p
             bee_instant[c] += p * (1 - (1 - sup_share) * (1 - bee_inst))
             row["pollen_per_sec"] += p
+
+    # ---------------- ability token pollen & honey ----------------
+    crit_avg, _ = _crit_factor(hive.get("crit_chance") + buff["crit_chance"], hive.get("crit_power") + buff["crit_power"],
+                               hive.get("super_crit_chance"), hive.get("super_crit_power"))
+
+    def fire_bee_rate(level):
+        fire = GAME["bees"]["Fire"]
+        speed = fire["speed"] * (1 + 0.03 * (level - 1)) * hive.get("bee_movespeed")
+        per_gather = fire["gather"] * (1 + 0.10 * (level - 1)) * tier * pollen * bee_gather_pollen * crit_avg
+        gps = 1 / (fire["gather_time"] + s["bee_flight_studs"] / speed)
+        return {c: frac[c] * per_gather * (1.5 if c == "red" else 1.0) * color_pollen[c] * gps for c in COLORS}
+
+    ctx = {"frac": frac, "tier": tier, "pollen": pollen, "color_pollen": color_pollen, "hive": hive, "settings": s,
+           "crit_factor": crit_avg, "crit_power": hive.get("crit_power") + buff["crit_power"],
+           "sync": buff["bomb_sync"], "bomb_power": buff["bomb_power"], "active_marks": buff["active_marks"],
+           "fire_bee_rate": fire_bee_rate}
+    token_pollen, token_instant, token_honey, token_detail = abilities.token_yield(tokens, ctx)
 
     # ---------------- bubbles ----------------
     # Your own bubbles (Gathering Bubbles, your frogs) pay you. An alt's own bubbles pay the alt even if you pop
@@ -409,15 +439,17 @@ def compute(setup, include_alts=True):
     instant_pollen = 0.0
     for c in COLORS:
         keep = (1 - min(hive.get(f"instant_{c}_conversion"), 1.0)) * (1 - ic)
-        kept = ((bee_pollen[c] - bee_instant[c]) + tool_pollen[c] + bubble_pollen[c]) * keep
+        kept = ((bee_pollen[c] - bee_instant[c]) + tool_pollen[c] + bubble_pollen[c]
+                + (token_pollen[c] - token_instant[c])) * keep
         bag_rate += kept
-        instant_pollen += bee_pollen[c] + tool_pollen[c] + bubble_pollen[c] - kept
-    gross = sum(bee_pollen.values()) + sum(tool_pollen.values()) + sum(bubble_pollen.values())
+        instant_pollen += bee_pollen[c] + tool_pollen[c] + bubble_pollen[c] + token_pollen[c] - kept
+    gross = (sum(bee_pollen.values()) + sum(tool_pollen.values()) + sum(bubble_pollen.values())
+             + sum(token_pollen.values()))
 
     field_cap = 1 + sum(frac[c] * (hive.get(f"{c}_field_capacity") - 1) for c in COLORS)
     capacity = hive.get("capacity_flat") * hive.get("capacity") * field_cap
 
-    walk = 2 * s["hive_distance_studs"] / max(s["player_speed"], 1)
+    walk = 2 * s["hive_distance_studs"] / max(s["player_speed"] * buff["haste"], 1)
     honey_at_hive = hive.get("honey_at_hive")
     if bag_rate <= 0 or capacity <= 0:
         fill_time, convert_time = math.inf, 0.0
@@ -429,6 +461,9 @@ def compute(setup, include_alts=True):
         cycle_time = fill_time + walk + convert_time
         honey_cycle = capacity * hpp * honey_at_hive + instant_pollen * hpp * fill_time
         honey_per_hour = honey_cycle / cycle_time * 3600 if math.isfinite(cycle_time) else 0.0
+    # honey tokens only spawn while your bees are out gathering
+    time_in_field = fill_time / cycle_time if cycle_time and math.isfinite(cycle_time) else 1.0
+    honey_per_hour += token_honey * time_in_field * 3600
 
     stat_keys = ["pollen", "white_pollen", "red_pollen", "blue_pollen", "bee_gather_pollen", "tool_pollen",
                  "bubble_pollen", "capacity_flat", "capacity", "convert_rate", "convert_rate_at_hive", "convert_amount",
@@ -442,8 +477,12 @@ def compute(setup, include_alts=True):
         "bee_pollen_per_sec": sum(bee_pollen.values()),
         "tool_pollen_per_sec": sum(tool_pollen.values()),
         "bubble_pollen_per_sec": sum(bubble_pollen.values()),
+        "ability_pollen_per_sec": sum(token_pollen.values()),
+        "token_honey_per_hour": token_honey * time_in_field * 3600,
+        "tokens": token_detail,
+        "buffs": buff,
         "bubble_sources": bubble_sources,
-        "pollen_by_color": {c: bee_pollen[c] + tool_pollen[c] + bubble_pollen[c] for c in COLORS},
+        "pollen_by_color": {c: bee_pollen[c] + tool_pollen[c] + bubble_pollen[c] + token_pollen[c] for c in COLORS},
         "instant_share": instant_pollen / gross if gross else 0.0,
         "bag_fill_per_sec": bag_rate,
         "capacity": capacity,
@@ -494,6 +533,8 @@ SENSITIVITY_TESTS = [
     ("+25% Critical Power", [["crit_power", "add", 0.25]]),
     ("+10% Honey Per Pollen", [["honey_per_pollen", "add", 0.10]]),
     ("+5% Bee Movespeed", [["bee_movespeed", "add", 0.05]]),
+    ("+10% Bee Ability Rate", [["bee_ability_rate", "add", 0.10]]),
+    ("+10% Bomb Pollen", [["bomb_pollen", "add", 0.10]]),
 ]
 
 

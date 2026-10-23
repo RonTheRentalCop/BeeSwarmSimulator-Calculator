@@ -17,6 +17,15 @@ STAT_DEFS = {
     "bee_gather_pollen": ("Bee Gather Pollen", "pct"),
     "tool_pollen": ("Tool Pollen", "pct"),
     "bubble_pollen": ("Bubble Pollen", "pct"),
+    "bomb_pollen": ("Bomb Pollen", "pct"),
+    "buzz_bomb_pollen": ("Buzz Bomb Pollen", "pct"),
+    "red_bomb_pollen": ("Red Bomb Pollen", "pct"),
+    "blue_bomb_pollen": ("Blue Bomb Pollen", "pct"),
+    "bomb_power": ("Bomb Power", "pct"),
+    "instant_bomb_conversion": ("Instant Bomb Conversion", "pct0"),
+    "bee_ability_pollen": ("Bee Ability Pollen", "pct"),
+    "honey_from_tokens": ("Honey From Tokens", "pct"),
+    "mark_duration": ("Mark Duration", "pct"),
     "gifted_bee_pollen": ("Gifted Bee Pollen", "pct"),
     "capacity_flat": ("Capacity (flat)", "flat"),
     "capacity": ("Capacity Multiplier", "pct"),
@@ -58,6 +67,9 @@ STAT_DEFS = {
     "bee:pollination_chance": ("Bee: Pollination Chance", "pct0"),
     "bee:bubble_chance": ("Bee: Gathering Bubble Chance", "pct0"),
     "bee:bubble_pollen": ("Bee: Bubble Pollen", "pct"),
+    "bee:ability_rate": ("Bee: Ability Rate", "pct"),
+    "bee:ability_pollen": ("Bee: Ability Pollen", "pct"),
+    "bee:bomb_pollen": ("Bee: Bomb Pollen", "pct"),
 }
 for _field in GAME["fields"]:
     STAT_DEFS[f"field_pollen:{_field}"] = (f"{_field} Pollen", "pct")
@@ -108,6 +120,9 @@ _BEEQUIP_BEE_STATS = {
     "InstantConversion": ("bee:instant_conversion", "add"), "ConvertAtHiveMul": ("bee:convert_at_hive", "mul"),
     "GatherPollinationChance": ("bee:pollination_chance", "add"),
     "BubbleChance": ("bee:bubble_chance", "add"), "BubblePollen": ("bee:bubble_pollen", "mul"),
+    "AbilityRate": ("bee:ability_rate", "mul"), "AbilityPollen": ("bee:ability_pollen", "mul"),
+    "BombPollen": ("bee:bomb_pollen", "mul"), "BuzzBombPollen": ("bee:bomb_pollen", "mul"),
+    "RedBombPollen": ("bee:bomb_pollen", "mul"), "BlueBombPollen": ("bee:bomb_pollen", "mul"),
 }
 _HIVE_TYPES = {
     "BaseProductionRate": "convert_rate", "ContainerSpaceMultiplier": "capacity", "ContainerSpace": "capacity_flat",
@@ -116,7 +131,8 @@ _HIVE_TYPES = {
     "MaxBeeEnergy": "bee_energy", "BeeMovespeedMultiplier": "bee_movespeed", "PollenValue": "honey_per_pollen",
     "CollectorPollenMultiplier": "tool_pollen", "BaseConversionRate": "convert_amount",
     "PlayerMovespeed": "player_movespeed_flat", "MovementCollection": "movement_collection",
-    "BeeAbilityRate": "bee_ability_rate",
+    "BeeAbilityRate": "bee_ability_rate", "HoneyFromTokens": "honey_from_tokens",
+    "MarkDurationMultiplier": "mark_duration", "BombPollen": "bomb_pollen",
 }
 
 
@@ -129,8 +145,10 @@ def hive_key(type_, params):
             return f"field_pollen:{params['Zone']}"
         if params.get("Tag") == "Bee Gather":
             return "bee_gather_pollen"
-        if params.get("Tag") == "Bubble":
-            return "bubble_pollen"
+        tag_keys = {"Bubble": "bubble_pollen", "Bomb": "bomb_pollen", "Buzz Bomb": "buzz_bomb_pollen",
+                    "Red Bomb": "red_bomb_pollen", "Blue Bomb": "blue_bomb_pollen", "Bee Ability": "bee_ability_pollen"}
+        if params.get("Tag") in tag_keys:
+            return tag_keys[params["Tag"]]
         return None if params else "pollen"
     if type_ == "PollenConversion":
         if "Color" in params:

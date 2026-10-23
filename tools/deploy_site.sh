@@ -13,6 +13,8 @@ remote=$(git remote get-url origin)
 cd dist
 rm -rf .git
 git init -q -b gh-pages
+git config user.email "$(git -C .. config user.email)"
+git config user.name "$(git -C .. config user.name)"
 git add -A
 git commit -qm "Deploy website"
 git push -qf "$remote" gh-pages
